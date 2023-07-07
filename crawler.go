@@ -12,37 +12,54 @@ type Crawler interface {
 }
 
 type CrawlerImpl struct {
-	database DatabaseImpl
+	database Database
 }
 
-func (rl *CrawlerImpl) Save(html string, url string) error {
+func (ci *CrawlerImpl) Save(html string, url string) error {
 	log.Println("SAVING", url)
 
 	// rl.database.Save(html, url)
 	return nil
 }
 
-func (rl *CrawlerImpl) Crawl(queue []URLQueue) {
-	counter := make(chan struct{}, 3)
+// Crawl is a function that takes a queue of URLs and crawls each URL,
+// searching for new links and adding them to a new queue. It uses a counter
+// channel to limit the number of concurrent crawls and a wait group to wait
+// for all crawls to finish. It creates a new browser instance using Rod, and
+// then navigates to each URL in the queue, waits for the page to load, and
+// extracts the href attribute of each element specified by the ItemTag. If a
+// valid href is found, it constructs a new URLQueue object and adds it to the
+// new_queue. Finally, it recursively calls itself with the new_queue to crawl
+// the new links. The function has no parameters and does not return anything.
+func (ci *CrawlerImpl) Crawl(queue []URLQueue) {
+	counter := make(chan struct{}, 1)
 	wg := sync.WaitGroup{}
 
 	for _, url := range queue {
 		wg.Add(1)
 		go func(url URL) {
+
+			// New url queue for new links found
+			// in the current url
 			new_queue := []URLQueue{}
 
 			counter <- struct{}{}
 
-			log.Println("READING", url)
+			log.Println("[+] READING", url.URLString)
 
 			browser := rod.New().MustConnect()
 
-			page := browser.MustPage(url.URL)
+			page := browser.MustPage(url.URLString)
 
 			page.MustSetExtraHeaders("X-Bot-Agent", "cedisearchbot/0.1 (+http://www.cedisearch.com/bot.html)")
 
-			page.Navigate(url.URL)
+			page.Navigate(url.URLString)
 			page.MustWaitLoad()
+			page.MustWaitStable()
+			page.MustWaitRequestIdle()
+			page.MustWaitIdle()
+			page.MustWaitElementsMoreThan(url.ItemTag.Attr, 1)
+			page.MustScreenshotFullPage("screenshot.png")
 
 			nodes := page.MustElements(url.ItemTag.Attr)
 
@@ -53,21 +70,28 @@ func (rl *CrawlerImpl) Crawl(queue []URLQueue) {
 
 					item_url := url.ItemTag.ValuePrefix + *data
 
-					new_queue = append(new_queue, URLQueue{
-						URL: URL{
-							URL:     item_url,
-							ItemTag: url.ItemTag,
+					new_url := URLQueue{
+						ID: item_url,
+						URLItem: URL{
+							URLString: item_url,
+							ItemTag:   url.ItemTag,
 						},
-					})
+					}
+
+					new_queue = append(new_queue, new_url)
+
+					ci.database.QueueURL(new_url)
+
 				}
 
 			}
 
-			rl.Crawl(new_queue)
+			log.Printf("[+] Found %v new links\n", len(new_queue))
+			ci.Crawl(new_queue)
 
 			wg.Done()
 			<-counter
-		}(url.URL)
+		}(url.URLItem)
 	}
 
 	wg.Wait()

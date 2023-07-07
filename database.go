@@ -11,9 +11,12 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-type Datbase interface {
-	Save()
+type Database interface {
 	Init()
+	SaveRawData(html string, u string)
+	QueueURL(url URLQueue)
+	GetURLMeta(url string)
+	GetURLQueues() []URLQueue
 }
 
 type DatabaseImpl struct {
@@ -60,8 +63,17 @@ func (dl *DatabaseImpl) SaveRawData(html string, u string) {
 // QueueURL adds the given URL to the database's URL queue.
 //
 // url: a string representing the URL to be queued.
-func (dl *DatabaseImpl) QueueURL(url string) {
-	dl.url_queues_col.InsertOne(context.TODO(), url)
+func (dl *DatabaseImpl) QueueURL(url URLQueue) {
+	_, err := dl.url_queues_col.InsertOne(context.TODO(), url)
+
+	if err != nil {
+		mongoErr, ok := err.(mongo.WriteException)
+		if ok && (mongoErr.WriteErrors[0].Code == 11000) {
+			log.Println("Already indexed:", url.URLItem.URLString)
+		} else {
+			log.Fatalln("Add queue error:", err)
+		}
+	}
 }
 
 // GetURLMeta retrieves the URL meta data from the database.

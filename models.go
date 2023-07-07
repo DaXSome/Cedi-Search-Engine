@@ -1,10 +1,8 @@
 package main
 
-import "go.mongodb.org/mongo-driver/bson/primitive"
-
 type URL struct {
-	URL     string  `bson:"url"`
-	ItemTag ItemTag `bson:"item_tag"`
+	URLString string  `bson:"url_string"`
+	ItemTag   ItemTag `bson:"item_tag"`
 }
 
 type ItemTag struct {
@@ -13,6 +11,6 @@ type ItemTag struct {
 }
 
 type URLQueue struct {
-	ID  primitive.ObjectID `bson:"_id"`
-	URL URL                `bson:"url"`
+	ID      string `bson:"_id"`
+	URLItem URL    `bson:"url_item"`
 }
