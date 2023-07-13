@@ -14,3 +14,8 @@ type URLQueue struct {
 	ID      string `bson:"_id"`
 	URLItem URL    `bson:"url_item"`
 }
+
+type RawData struct {
+	ID   string `bson:"_id"`
+	HTML string `bson:"html"`
+}

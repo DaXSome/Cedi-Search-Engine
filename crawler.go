@@ -58,8 +58,7 @@ func (ci *CrawlerImpl) Crawl(queue []URLQueue) {
 			page.MustWaitStable()
 			page.MustWaitRequestIdle()
 			page.MustWaitIdle()
-			page.MustWaitElementsMoreThan(url.ItemTag.Attr, 1)
-			page.MustScreenshotFullPage("screenshot.png")
+			page.MustWaitElementsMoreThan(url.ItemTag.Attr, 5)
 
 			nodes := page.MustElements(url.ItemTag.Attr)
 
@@ -88,6 +87,7 @@ func (ci *CrawlerImpl) Crawl(queue []URLQueue) {
 
 			log.Printf("[+] Found %v new links\n", len(new_queue))
 			ci.Crawl(new_queue)
+			ci.database.SaveRawData(page.MustHTML(), url.URLString)
 
 			wg.Done()
 			<-counter

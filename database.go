@@ -23,6 +23,7 @@ type DatabaseImpl struct {
 	mongoClient    *mongo.Client
 	url_queues_col *mongo.Collection
 	url_meta_col   *mongo.Collection
+	raw_data_col   *mongo.Collection
 }
 
 func (dl *DatabaseImpl) Init() {
@@ -41,6 +42,7 @@ func (dl *DatabaseImpl) Init() {
 	dl.mongoClient = client
 	dl.url_queues_col = client.Database("cedi_search").Collection("url_queues")
 	dl.url_meta_col = client.Database("cedi_search").Collection("url_meta")
+	dl.raw_data_col = client.Database("cedi_search").Collection("raw_data")
 
 	// defer func() {
 	// 	if err = client.Disconnect(context.TODO()); err != nil {
@@ -57,7 +59,17 @@ func (dl *DatabaseImpl) Init() {
 }
 
 func (dl *DatabaseImpl) SaveRawData(html string, u string) {
-	os.WriteFile(url.PathEscape(u)+".html", []byte(html), 0644)
+	_, err := dl.raw_data_col.InsertOne(context.TODO(), RawData{HTML: html, ID: url.PathEscape(u)})
+
+	if err != nil {
+		mongoErr, ok := err.(mongo.WriteException)
+		if ok && (mongoErr.WriteErrors[0].Code == 11000) {
+			log.Println("Already indexed:", u)
+		} else {
+			log.Fatalln("Add queue error:", err)
+		}
+	}
+
 }
 
 // QueueURL adds the given URL to the database's URL queue.
@@ -69,7 +81,7 @@ func (dl *DatabaseImpl) QueueURL(url URLQueue) {
 	if err != nil {
 		mongoErr, ok := err.(mongo.WriteException)
 		if ok && (mongoErr.WriteErrors[0].Code == 11000) {
-			log.Println("Already indexed:", url.URLItem.URLString)
+			log.Println("Already visited:", url.URLItem.URLString)
 		} else {
 			log.Fatalln("Add queue error:", err)
 		}
