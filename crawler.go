@@ -3,8 +3,10 @@ package main
 import (
 	"log"
 	"sync"
+	"time"
 
 	"github.com/go-rod/rod"
+	"github.com/go-rod/rod/lib/input"
 )
 
 type Crawler interface {
@@ -60,12 +62,29 @@ func (ci *CrawlerImpl) Crawl(queue []URLQueue) {
 			page.MustWaitIdle()
 			page.MustWaitElementsMoreThan(url.ItemTag.Attr, 5)
 
+			// Scroll down to the bottom of the page
+			// End key doesn't work
+			// Simulate multiple space key presses
+			// to ensure end is reached so some pages load
+			// like JUMIA
+			for i := 0; i <= 500; i++ {
+
+				page.Keyboard.Press(input.Space)
+
+				// pause for 5 seconds after every 50 presses
+				// to allow loading
+				if i%50 == 0 {
+					time.Sleep(5 * time.Second)
+				}
+			}
+
 			nodes := page.MustElements(url.ItemTag.Attr)
 
 			for _, node := range nodes {
 				data := node.MustAttribute("href")
 
 				if data != nil {
+					log.Println("DATA ==> ", *data)
 
 					item_url := url.ItemTag.ValuePrefix + *data
 
@@ -86,8 +105,8 @@ func (ci *CrawlerImpl) Crawl(queue []URLQueue) {
 			}
 
 			log.Printf("[+] Found %v new links\n", len(new_queue))
-			ci.Crawl(new_queue)
 			ci.database.SaveRawData(page.MustHTML(), url.URLString)
+			ci.Crawl(new_queue)
 
 			wg.Done()
 			<-counter

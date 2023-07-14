@@ -10,16 +10,16 @@ import (
 
 var (
 	SEED_URLS = []URLQueue{
-		// {
-		// 	ID: "https://www.jumia.com.gh/white-label-lemongrass-and-ginger-tea-25-tea-bags-77639230.html",
-		// 	URLItem: URL{
-		// 		URLString: "https://www.jumia.com.gh/white-label-lemongrass-and-ginger-tea-25-tea-bags-77639230.html",
-		// 		ItemTag: ItemTag{
-		// 			Attr:        ".core",
-		// 			ValuePrefix: "https://www.jumia.com.gh",
-		// 		},
-		// 	},
-		// },
+		{
+			ID: "https://www.jumia.com.gh/white-label-lemongrass-and-ginger-tea-25-tea-bags-77639230.html",
+			URLItem: URL{
+				URLString: "https://www.jumia.com.gh/white-label-lemongrass-and-ginger-tea-25-tea-bags-77639230.html",
+				ItemTag: ItemTag{
+					Attr:        ".core",
+					ValuePrefix: "https://www.jumia.com.gh",
+				},
+			},
+		},
 		{
 			ID: "www.jumia.com.gh",
 			URLItem: URL{
