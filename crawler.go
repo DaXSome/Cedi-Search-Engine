@@ -34,7 +34,7 @@ func (ci *CrawlerImpl) Save(html string, url string) error {
 // new_queue. Finally, it recursively calls itself with the new_queue to crawl
 // the new links. The function has no parameters and does not return anything.
 func (ci *CrawlerImpl) Crawl(queue []URLQueue) {
-	counter := make(chan struct{}, 1)
+	counter := make(chan struct{}, 3)
 	wg := sync.WaitGroup{}
 
 	for _, url := range queue {
