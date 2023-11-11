@@ -87,6 +87,27 @@ func (db *Database) GetQueue() []UrlQueue {
 
 }
 
-func (db *Database) AddToQueue() {
+func (db *Database) AddToQueue(url UrlQueue) {
+	log.Println("[+] Adding to queue...")
+
+	database, err := db.client.Database(context.Background(), "cedi_search")
+
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	col, err := database.Collection(context.TODO(), "url_queues")
+
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	_, err = col.CreateDocument(context.TODO(), url)
+
+	if err != nil {
+		log.Println(err)
+	}
+
+	log.Println("[+] Added to queue!")
 
 }
