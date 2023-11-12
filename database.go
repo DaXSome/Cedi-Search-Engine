@@ -56,7 +56,7 @@ func (db *Database) GetQueue() []UrlQueue {
 		log.Fatalln(err)
 	}
 
-	cursor, err := database.Query(ctx, query, map[string]interface{}{})
+	cursor, err := database.Query(ctx, query, nil)
 
 	if err != nil {
 		log.Fatalln(err)
@@ -168,5 +168,43 @@ func (db *Database) SaveHTML(page CrawledPage) {
 	}
 
 	log.Println("[+] Saved HTML!")
+
+}
+
+func (db *Database) CanQueueUrl(url string) bool {
+	ctx := driver.WithQueryCount(context.Background())
+	query := `FOR d IN url_queues 
+				FILTER d.url == @url
+				RETURN d`
+
+	database, err := db.client.Database(ctx, "cedi_search")
+
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	bindVars := map[string]interface{}{
+		"url": url,
+	}
+
+	urlQueuesCursor, err := database.Query(ctx, query, bindVars)
+
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	defer urlQueuesCursor.Close()
+
+	query = `FOR d IN crawled_pages 
+				FILTER d.url == @url
+				RETURN d`
+
+	crawledPagesCursor, err := database.Query(ctx, query, bindVars)
+
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	return urlQueuesCursor.Count() == 0 && crawledPagesCursor.Count() == 0
 
 }

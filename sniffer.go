@@ -16,9 +16,14 @@ func queueProducts(db *Database, products []soup.Root) {
 		// E.g. https://www.jumia.com.gh/jameson-irish-whiskey-750ml-51665215.html
 		productLink := fmt.Sprintf("https://www.jumia.com.gh%s", link.Attrs()["href"])
 
-		db.AddToQueue(UrlQueue{
-			URL: productLink,
-		})
+		if db.CanQueueUrl(productLink) {
+			db.AddToQueue(UrlQueue{
+				URL: productLink,
+			})
+		} else {
+			log.Println("[+] Skipping", productLink)
+		}
+
 	}
 }
 
