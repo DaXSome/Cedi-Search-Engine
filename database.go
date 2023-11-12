@@ -46,7 +46,9 @@ func (db *Database) GetQueue() []UrlQueue {
 	log.Println("[+] Getting queue...")
 
 	ctx := context.Background()
-	query := `FOR d IN url_queues 
+	query := `FOR d IN url_queues
+				LET randomValue = RAND()
+        		SORT randomValue ASC
 				LIMIT 5 
 				RETURN d
 			`
@@ -87,7 +89,6 @@ func (db *Database) GetQueue() []UrlQueue {
 	log.Println("[+] Queue retrieved!")
 
 	return queue
-
 }
 
 func (db *Database) AddToQueue(url UrlQueue) {
