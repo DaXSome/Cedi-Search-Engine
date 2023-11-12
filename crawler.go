@@ -48,7 +48,7 @@ func (cr *Crawler) Crawl() {
 			cr.db.SaveHTML(CrawledPage{
 				URL:    url.URL,
 				HTML:   doc.HTML(),
-				Source: "Jumia",
+				Source: url.Source,
 			})
 
 			cr.db.DeleteFromQueue(url)

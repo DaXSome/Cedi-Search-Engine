@@ -18,7 +18,8 @@ func queueProducts(db *Database, products []soup.Root) {
 
 		if db.CanQueueUrl(productLink) {
 			db.AddToQueue(UrlQueue{
-				URL: productLink,
+				URL:    productLink,
+				Source: "Jumia",
 			})
 		} else {
 			log.Println("[+] Skipping", productLink)
