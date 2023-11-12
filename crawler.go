@@ -46,8 +46,9 @@ func (cr *Crawler) Crawl() {
 			doc := soup.HTMLParse(resp)
 
 			cr.db.SaveHTML(CrawledPage{
-				URL:  url.URL,
-				HTML: doc.HTML(),
+				URL:    url.URL,
+				HTML:   doc.HTML(),
+				Source: "Jumia",
 			})
 
 			cr.db.DeleteFromQueue(url)

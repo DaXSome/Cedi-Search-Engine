@@ -5,6 +5,7 @@ type UrlQueue struct {
 }
 
 type CrawledPage struct {
-	URL  string `json:"url"`
-	HTML string `json:"html"`
+	URL    string `json:"url"`
+	HTML   string `json:"html"`
+	Source string `json:"source"`
 }
