@@ -46,7 +46,10 @@ func (db *Database) GetQueue() []UrlQueue {
 	log.Println("[+] Getting queue...")
 
 	ctx := context.Background()
-	query := "FOR d IN url_queues LIMIT 5 RETURN d"
+	query := `FOR d IN url_queues 
+				LIMIT 5 
+				RETURN d
+			`
 	database, err := db.client.Database(ctx, "cedi_search")
 
 	if err != nil {
@@ -88,7 +91,7 @@ func (db *Database) GetQueue() []UrlQueue {
 }
 
 func (db *Database) AddToQueue(url UrlQueue) {
-	log.Println("[+] Adding to queue...")
+	log.Println("[+] Adding to queue...", url.URL)
 
 	database, err := db.client.Database(context.Background(), "cedi_search")
 
@@ -105,9 +108,65 @@ func (db *Database) AddToQueue(url UrlQueue) {
 	_, err = col.CreateDocument(context.TODO(), url)
 
 	if err != nil {
-		log.Println(err)
+		log.Fatalln(err)
 	}
 
 	log.Println("[+] Added to queue!")
+
+}
+
+func (db *Database) DeleteFromQueue(url UrlQueue) {
+	log.Println("[+] Deleting from queue...", url.URL)
+
+	ctx := context.Background()
+	query := `FOR d IN url_queues 
+			FILTER d.url == @url
+			REMOVE d IN url_queues
+			RETURN OLD
+			`
+
+	database, err := db.client.Database(ctx, "cedi_search")
+
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	bindVars := map[string]interface{}{
+		"url": url.URL,
+	}
+
+	cursor, err := database.Query(ctx, query, bindVars)
+
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	cursor.Close()
+
+	log.Println("[+] Deleted from queue")
+}
+
+func (db *Database) SaveHTML(page CrawledPage) {
+	log.Println("[+] Saving html...", page.URL)
+
+	database, err := db.client.Database(context.Background(), "cedi_search")
+
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	col, err := database.Collection(context.TODO(), "crawled_pages")
+
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	_, err = col.CreateDocument(context.TODO(), page)
+
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	log.Println("[+] Saved HTML!")
 
 }

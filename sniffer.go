@@ -43,7 +43,8 @@ func extractProducts(href string) ([]soup.Root, int) {
 		log.Println(err)
 	}
 
-	time.Sleep(10 * time.Second)
+	log.Println("[+] Wait 60s to continue extracting products")
+	time.Sleep(60 * time.Second)
 
 	return doc.FindAll("a", "class", "core"), totalPages
 }
