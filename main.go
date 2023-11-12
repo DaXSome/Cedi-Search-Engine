@@ -19,10 +19,10 @@ func main() {
 
 	database.Init()
 
-	sniffer := NewSniffer(database)
+	jumiaSniffer := NewJumiaSniffer(database)
 
 	wg.Add(1)
-	go sniffer.Sniff(&wg)
+	go jumiaSniffer.Sniff(&wg)
 
 	crawler := NewCrawler(database)
 	crawler.Crawl()

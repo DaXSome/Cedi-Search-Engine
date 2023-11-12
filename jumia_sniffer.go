@@ -55,17 +55,21 @@ func extractProducts(href string) ([]soup.Root, int) {
 	return doc.FindAll("a", "class", "core"), totalPages
 }
 
-type Sniffer struct {
+type Sniffer interface {
+	Sniff(wg *sync.WaitGroup)
+}
+
+type JumiaSniffer struct {
 	db *Database
 }
 
-func NewSniffer(database *Database) *Sniffer {
-	return &Sniffer{
+func NewJumiaSniffer(database *Database) *JumiaSniffer {
+	return &JumiaSniffer{
 		db: database,
 	}
 }
 
-func (sn *Sniffer) Sniff(wg *sync.WaitGroup) {
+func (js *JumiaSniffer) Sniff(wg *sync.WaitGroup) {
 	log.Println("[+] Sniffing...")
 
 	defer wg.Done()
@@ -93,7 +97,7 @@ func (sn *Sniffer) Sniff(wg *sync.WaitGroup) {
 
 			products, totalPages := extractProducts(categoryLink)
 
-			queueProducts(sn.db, products)
+			queueProducts(js.db, products)
 
 			for i := 2; i <= totalPages; i++ {
 				// E.g. https://www.jumia.com.gh/groceries?page=2
@@ -101,7 +105,7 @@ func (sn *Sniffer) Sniff(wg *sync.WaitGroup) {
 
 				pageProducts, _ := extractProducts(pageLink)
 
-				queueProducts(sn.db, pageProducts)
+				queueProducts(js.db, pageProducts)
 
 			}
 
