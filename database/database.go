@@ -50,7 +50,7 @@ func (db *Database) GetQueue() []models.UrlQueue {
 	query := `FOR d IN url_queues
 				LET randomValue = RAND()
         		SORT randomValue ASC
-				LIMIT 5 
+				LIMIT 10 
 				RETURN d
 			`
 	database, err := db.client.Database(ctx, "cedi_search")

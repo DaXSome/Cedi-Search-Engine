@@ -64,8 +64,8 @@ func (cr *Crawler) Crawl() {
 
 	wg.Wait()
 
-	log.Println("[+] Wait 60s to continue crawling")
-	time.Sleep(60 * time.Second)
+	log.Println("[+] Wait 30s to continue crawling")
+	time.Sleep(30 * time.Second)
 
 	cr.Crawl()
 }
