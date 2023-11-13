@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/anaskhan96/soup"
 	"github.com/owbird/cedisearch/database"
@@ -30,6 +31,12 @@ func (il *IndexerImpl) Index(wg *sync.WaitGroup) {
 
 	if len(pages) == 0 {
 		log.Println("[+] No pages to index for Jumia!")
+		log.Println("[+] Waiting 60s to continue indexing...")
+
+		time.Sleep(60 * time.Second)
+
+		il.Index(wg)
+
 		wg.Done()
 		return
 	}
