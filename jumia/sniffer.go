@@ -77,7 +77,7 @@ func (sl *SnifferImpl) Sniff(wg *sync.WaitGroup) {
 
 	defer wg.Done()
 
-	soup.Header("User-Agent", "cedisearchbot/0.1 (+http://www.cedisearch.com/bot.html)")
+	soup.Header("User-Agent", "cedisearchbot/0.1 (+https://cedi-search.vercel.app/about)")
 
 	resp, err := soup.Get("https://www.jumia.com.gh")
 
