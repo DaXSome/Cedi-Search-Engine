@@ -1,4 +1,4 @@
-package main
+package jumia
 
 import (
 	"fmt"
@@ -8,16 +8,19 @@ import (
 	"sync"
 	"time"
 
+	"github.com/owbird/cedisearch/database"
+	"github.com/owbird/cedisearch/models"
+
 	"github.com/anaskhan96/soup"
 )
 
-func queueProducts(db *Database, products []soup.Root) {
+func queueProducts(db *database.Database, products []soup.Root) {
 	for _, link := range products {
 		// E.g. https://www.jumia.com.gh/jameson-irish-whiskey-750ml-51665215.html
 		productLink := fmt.Sprintf("https://www.jumia.com.gh%s", link.Attrs()["href"])
 
 		if db.CanQueueUrl(productLink) {
-			db.AddToQueue(UrlQueue{
+			db.AddToQueue(models.UrlQueue{
 				URL:    productLink,
 				Source: "Jumia",
 			})
@@ -59,17 +62,17 @@ type Sniffer interface {
 	Sniff(wg *sync.WaitGroup)
 }
 
-type JumiaSniffer struct {
-	db *Database
+type SnifferImpl struct {
+	db *database.Database
 }
 
-func NewJumiaSniffer(database *Database) *JumiaSniffer {
-	return &JumiaSniffer{
+func NewSniffer(database *database.Database) *SnifferImpl {
+	return &SnifferImpl{
 		db: database,
 	}
 }
 
-func (js *JumiaSniffer) Sniff(wg *sync.WaitGroup) {
+func (js *SnifferImpl) Sniff(wg *sync.WaitGroup) {
 	log.Println("[+] Sniffing...")
 
 	defer wg.Done()

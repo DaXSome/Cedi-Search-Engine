@@ -5,6 +5,9 @@ import (
 	"sync"
 
 	"github.com/joho/godotenv"
+	"github.com/owbird/cedisearch/crawler"
+	"github.com/owbird/cedisearch/database"
+	"github.com/owbird/cedisearch/jumia"
 )
 
 func main() {
@@ -15,16 +18,16 @@ func main() {
 
 	godotenv.Load()
 
-	database := NewDatabase()
+	database := database.NewDatabase()
 
 	database.Init()
 
-	jumiaSniffer := NewJumiaSniffer(database)
+	jumiaSniffer := jumia.NewSniffer(database)
 
 	wg.Add(1)
 	go jumiaSniffer.Sniff(&wg)
 
-	crawler := NewCrawler(database)
+	crawler := crawler.NewCrawler(database)
 	crawler.Crawl()
 
 	wg.Wait()

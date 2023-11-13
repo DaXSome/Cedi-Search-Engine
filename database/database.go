@@ -1,4 +1,4 @@
-package main
+package database
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 
 	"github.com/arangodb/go-driver"
 	"github.com/arangodb/go-driver/http"
+	"github.com/owbird/cedisearch/models"
 )
 
 type Database struct {
@@ -41,7 +42,7 @@ func (db *Database) Init() {
 
 }
 
-func (db *Database) GetQueue() []UrlQueue {
+func (db *Database) GetQueue() []models.UrlQueue {
 
 	log.Println("[+] Getting queue...")
 
@@ -66,11 +67,11 @@ func (db *Database) GetQueue() []UrlQueue {
 
 	defer cursor.Close()
 
-	queue := []UrlQueue{}
+	queue := []models.UrlQueue{}
 
 	for {
 
-		var doc UrlQueue
+		var doc models.UrlQueue
 
 		_, err := cursor.ReadDocument(ctx, &doc)
 
@@ -91,7 +92,7 @@ func (db *Database) GetQueue() []UrlQueue {
 	return queue
 }
 
-func (db *Database) AddToQueue(url UrlQueue) {
+func (db *Database) AddToQueue(url models.UrlQueue) {
 	log.Println("[+] Adding to queue...", url.URL)
 
 	database, err := db.client.Database(context.Background(), "cedi_search")
@@ -116,7 +117,7 @@ func (db *Database) AddToQueue(url UrlQueue) {
 
 }
 
-func (db *Database) DeleteFromQueue(url UrlQueue) {
+func (db *Database) DeleteFromQueue(url models.UrlQueue) {
 	log.Println("[+] Deleting from queue...", url.URL)
 
 	ctx := context.Background()
@@ -147,7 +148,7 @@ func (db *Database) DeleteFromQueue(url UrlQueue) {
 	log.Println("[+] Deleted from queue")
 }
 
-func (db *Database) SaveHTML(page CrawledPage) {
+func (db *Database) SaveHTML(page models.CrawledPage) {
 	log.Println("[+] Saving html...", page.URL)
 
 	database, err := db.client.Database(context.Background(), "cedi_search")

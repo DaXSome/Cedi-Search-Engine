@@ -1,4 +1,4 @@
-package main
+package crawler
 
 import (
 	"log"
@@ -6,13 +6,15 @@ import (
 	"time"
 
 	"github.com/anaskhan96/soup"
+	"github.com/owbird/cedisearch/database"
+	"github.com/owbird/cedisearch/models"
 )
 
 type Crawler struct {
-	db *Database
+	db *database.Database
 }
 
-func NewCrawler(database *Database) *Crawler {
+func NewCrawler(database *database.Database) *Crawler {
 	return &Crawler{
 		db: database,
 	}
@@ -31,7 +33,7 @@ func (cr *Crawler) Crawl() {
 	for _, url := range queue {
 
 		wg.Add(1)
-		go func(url UrlQueue) {
+		go func(url models.UrlQueue) {
 
 			log.Println("[+] Crawling: ", url.URL)
 
@@ -45,7 +47,7 @@ func (cr *Crawler) Crawl() {
 
 			doc := soup.HTMLParse(resp)
 
-			cr.db.SaveHTML(CrawledPage{
+			cr.db.SaveHTML(models.CrawledPage{
 				URL:    url.URL,
 				HTML:   doc.HTML(),
 				Source: url.Source,
