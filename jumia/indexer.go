@@ -31,6 +31,7 @@ func (il *IndexerImpl) Index(wg *sync.WaitGroup) {
 	if len(pages) == 0 {
 		log.Println("[+] No pages to index for Jumia!")
 		wg.Done()
+		return
 	}
 
 	for _, page := range pages {
@@ -45,7 +46,7 @@ func (il *IndexerImpl) Index(wg *sync.WaitGroup) {
 		price, err := strconv.ParseFloat(strings.ReplaceAll(priceParts, ",", ""), 64)
 
 		if err != nil {
-			log.Fatalln(err, page.URL)
+			log.Fatalln(err)
 		}
 
 		productRatingText := parsedPage.Find("div", "class", "stars").Text()
@@ -63,12 +64,17 @@ func (il *IndexerImpl) Index(wg *sync.WaitGroup) {
 		productDescription := ""
 
 		if productDescriptionEl.Error == nil {
-			productDescription = parsedPage.Find("div", "class", "-mhm").FullText()
+			productDescription = productDescriptionEl.FullText()
 		}
 
-		productIDText := parsedPage.Find("li", "class", "-pvxs").FullText()
+		productID := ""
 
-		productID := strings.Split(productIDText, " ")[1]
+		productIDTextEl := parsedPage.Find("li", "class", "-pvxs")
+
+		if productIDTextEl.Error == nil {
+			productIDText := productIDTextEl.FullText()
+			productID = strings.Split(productIDText, " ")[1]
+		}
 
 		productImagesEl := parsedPage.FindAll("img", "class", "-fw")
 
