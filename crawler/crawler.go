@@ -5,9 +5,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Cedi-Search/Cedi-Search-Engine/database"
+	"github.com/Cedi-Search/Cedi-Search-Engine/models"
 	"github.com/anaskhan96/soup"
-	"github.com/owbird/cedisearch/database"
-	"github.com/owbird/cedisearch/models"
 )
 
 type Crawler struct {

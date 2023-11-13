@@ -1,4 +1,4 @@
-module github.com/owbird/cedisearch
+module github.com/Cedi-Search/Cedi-Search-Engine
 
 go 1.20
 

@@ -7,9 +7,9 @@ import (
 	"sync"
 	"time"
 
+	database "github.com/Cedi-Search/Cedi-Search-Engine/database"
+	models "github.com/Cedi-Search/Cedi-Search-Engine/models"
 	"github.com/anaskhan96/soup"
-	"github.com/owbird/cedisearch/database"
-	"github.com/owbird/cedisearch/models"
 )
 
 type Indexer interface{}

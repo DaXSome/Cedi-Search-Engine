@@ -5,9 +5,9 @@ import (
 	"log"
 	"os"
 
+	models "github.com/Cedi-Search/Cedi-Search-Engine/models"
 	"github.com/arangodb/go-driver"
 	"github.com/arangodb/go-driver/http"
-	"github.com/owbird/cedisearch/models"
 )
 
 type Database struct {

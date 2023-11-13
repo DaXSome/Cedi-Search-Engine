@@ -4,10 +4,10 @@ import (
 	"log"
 	"sync"
 
+	"github.com/Cedi-Search/Cedi-Search-Engine/crawler"
+	"github.com/Cedi-Search/Cedi-Search-Engine/database"
+	"github.com/Cedi-Search/Cedi-Search-Engine/jumia"
 	"github.com/joho/godotenv"
-	"github.com/owbird/cedisearch/crawler"
-	"github.com/owbird/cedisearch/database"
-	"github.com/owbird/cedisearch/jumia"
 )
 
 func main() {
