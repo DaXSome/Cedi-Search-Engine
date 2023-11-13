@@ -46,8 +46,6 @@ func (il *IndexerImpl) Index(wg *sync.WaitGroup) {
 
 		productName := parsedPage.Find("h1").Text()
 
-		log.Println(page.URL)
-
 		productPriceStirngEl := parsedPage.Find("span", "class", "-prxs")
 
 		productPriceStirng := ""
