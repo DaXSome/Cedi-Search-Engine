@@ -27,6 +27,11 @@ func main() {
 	wg.Add(1)
 	go jumiaSniffer.Sniff(&wg)
 
+	jumiaIndexer := jumia.NewIndexer(database)
+
+	wg.Add(1)
+	go jumiaIndexer.Index(&wg)
+
 	crawler := crawler.NewCrawler(database)
 	crawler.Crawl()
 

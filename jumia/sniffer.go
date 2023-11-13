@@ -72,7 +72,7 @@ func NewSniffer(database *database.Database) *SnifferImpl {
 	}
 }
 
-func (js *SnifferImpl) Sniff(wg *sync.WaitGroup) {
+func (sl *SnifferImpl) Sniff(wg *sync.WaitGroup) {
 	log.Println("[+] Sniffing...")
 
 	defer wg.Done()
@@ -100,7 +100,7 @@ func (js *SnifferImpl) Sniff(wg *sync.WaitGroup) {
 
 			products, totalPages := extractProducts(categoryLink)
 
-			queueProducts(js.db, products)
+			queueProducts(sl.db, products)
 
 			for i := 2; i <= totalPages; i++ {
 				// E.g. https://www.jumia.com.gh/groceries?page=2
@@ -108,7 +108,7 @@ func (js *SnifferImpl) Sniff(wg *sync.WaitGroup) {
 
 				pageProducts, _ := extractProducts(pageLink)
 
-				queueProducts(js.db, pageProducts)
+				queueProducts(sl.db, pageProducts)
 
 			}
 

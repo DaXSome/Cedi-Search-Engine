@@ -210,3 +210,130 @@ func (db *Database) CanQueueUrl(url string) bool {
 	return urlQueuesCursor.Count() == 0 && crawledPagesCursor.Count() == 0
 
 }
+
+func (db *Database) GetCrawledPages(source string) []models.CrawledPage {
+
+	log.Printf("[+] Getting crawled pages for %s...", source)
+
+	ctx := context.Background()
+	query := `FOR d IN crawled_pages
+				FILTER d.source == @source
+				LET randomValue = RAND()
+				SORT randomValue ASC
+				LIMIT 5
+				RETURN d
+			`
+	database, err := db.client.Database(ctx, "cedi_search")
+
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	bindVars := map[string]interface{}{
+		"source": source,
+	}
+
+	cursor, err := database.Query(ctx, query, bindVars)
+
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	defer cursor.Close()
+
+	pages := []models.CrawledPage{}
+
+	for {
+
+		var doc models.CrawledPage
+
+		_, err := cursor.ReadDocument(ctx, &doc)
+
+		if doc.URL != "" {
+			pages = append(pages, doc)
+		}
+
+		if driver.IsNoMoreDocuments(err) {
+			break
+		} else if err != nil {
+			log.Fatalln(err)
+		}
+
+	}
+
+	log.Printf("[+] Crawled pages for %s retrieved!", source)
+
+	return pages
+}
+
+func (db *Database) IndexProduct(product models.Product) {
+	log.Println("[+] Saving product...", product.Name)
+
+	database, err := db.client.Database(context.Background(), "cedi_search")
+
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	col, err := database.Collection(context.TODO(), "indexed_products")
+
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	_, err = col.CreateDocument(context.TODO(), product)
+
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	log.Println("[+] Product Saved!")
+
+}
+
+func (db *Database) DeleteFromCrawledPages(page models.CrawledPage) {
+	log.Println("[+] Deleting from crawled pages...", page.URL)
+
+	database, err := db.client.Database(context.Background(), "cedi_search")
+
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	col, err := database.Collection(context.TODO(), "indexed_pages")
+
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	_, err = col.CreateDocument(context.TODO(), page)
+
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	query := `FOR d IN crawled_pages 
+			FILTER d.url == @url
+			REMOVE d IN crawled_pages
+			RETURN OLD
+			`
+
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	bindVars := map[string]interface{}{
+		"url": page.URL,
+	}
+
+	cursor, err := database.Query(context.Background(), query, bindVars)
+
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	cursor.Close()
+
+	log.Println("[+] Deleted Crawled page!")
+
+}
