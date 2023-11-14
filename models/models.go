@@ -21,3 +21,8 @@ type Product struct {
 	Source      string   `json:"source"`
 	Images      []string `json:"images"`
 }
+
+type AlgoliaData struct {
+	ObjectID string `json:"objectID"`
+	Product
+}

@@ -9,6 +9,7 @@ require (
 )
 
 require (
+	github.com/algolia/algoliasearch-client-go/v3 v3.31.0 // indirect
 	github.com/arangodb/go-velocypack v0.0.0-20200318135517-5af53c29c67e // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	golang.org/x/net v0.17.0 // indirect
