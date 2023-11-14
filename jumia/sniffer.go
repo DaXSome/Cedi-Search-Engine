@@ -57,14 +57,19 @@ func extractProducts(href string) ([]soup.Root, int) {
 	// E.g. /groceries/?page=50#catalog-listing
 	lastPageLink := totalPagesEl[len(totalPagesEl)-1].Attrs()["href"]
 
-	totalPages, err := strconv.Atoi(strings.Split(strings.Split(lastPageLink, "=")[1], "#")[0])
+	eqSignSplit := strings.Split(lastPageLink, "=")
 
-	if err != nil {
-		log.Println(err)
+	totalPages := 0
+	var err error
+
+	if len(eqSignSplit) > 1 {
+
+		totalPages, err = strconv.Atoi(strings.Split(eqSignSplit[1], "#")[0])
+
+		if err != nil {
+			log.Println(err)
+		}
 	}
-
-	log.Println("[+] Wait 60s to continue extracting products")
-	time.Sleep(60 * time.Second)
 
 	return doc.FindAll("a", "class", "core"), totalPages
 }
@@ -121,17 +126,19 @@ func (sl *SnifferImpl) Sniff(wg *sync.WaitGroup) {
 			queueProducts(sl.db, products)
 
 			for i := 2; i <= totalPages; i++ {
-				// E.g. https://www.jumia.com.gh/groceries?page=2
-				pageLink := fmt.Sprintf("%s?page=%d", categoryLink, i)
+				go func(i int) {
+					// E.g. https://www.jumia.com.gh/groceries?page=2
+					pageLink := fmt.Sprintf("%s?page=%d", categoryLink, i)
 
-				pageProducts, _ := extractProducts(pageLink)
+					pageProducts, _ := extractProducts(pageLink)
 
-				queueProducts(sl.db, pageProducts)
+					queueProducts(sl.db, pageProducts)
+				}(i)
 
 			}
 
-			log.Println("[+] Wait 60s to continue sniff")
-			time.Sleep(60 * time.Second)
+			log.Println("[+] Wait 120s to continue sniff")
+			time.Sleep(120 * time.Second)
 
 		}
 	}
