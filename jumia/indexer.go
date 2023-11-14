@@ -18,12 +18,19 @@ type IndexerImpl struct {
 	db *database.Database
 }
 
+// NewIndexer creates a new instance of IndexerImpl.
+//
+// It takes a database as a parameter and returns a pointer to IndexerImpl.
 func NewIndexer(database *database.Database) *IndexerImpl {
 	return &IndexerImpl{
 		db: database,
 	}
 }
 
+// Index indexes the crawled pages for Jumia.
+//
+// Parameters:
+// - wg: A pointer to a sync.WaitGroup that is used to coordinate the goroutines.
 func (il *IndexerImpl) Index(wg *sync.WaitGroup) {
 	log.Println("[+] Indexing Jumia...")
 

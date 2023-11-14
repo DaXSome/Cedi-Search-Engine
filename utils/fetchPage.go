@@ -7,6 +7,9 @@ import (
 	"github.com/anaskhan96/soup"
 )
 
+// FetchPage fetches the content of a web page given its URL.
+//
+// href: The URL of the web page to fetch.
 func FetchPage(href string) string {
 	resp, err := soup.Get(href)
 

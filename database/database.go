@@ -10,14 +10,43 @@ import (
 	"github.com/arangodb/go-driver/http"
 )
 
+// openCollection opens a collection in the database.
+//
+// It takes a pointer to a Database struct and the name of the collection as parameters.
+// It returns a driver.Collection.
+func openCollection(db *Database, collection string) driver.Collection {
+	database, err := db.client.Database(context.Background(), "cedi_search")
+
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	col, err := database.Collection(context.TODO(), collection)
+
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	return col
+
+}
+
 type Database struct {
 	client driver.Client
 }
 
+// NewDatabase initializes a new instance of the Database struct.
+//
+// Returns a pointer to the newly created Database.
 func NewDatabase() *Database {
 	return &Database{}
 }
 
+// Init initializes the database.
+//
+// It establishes a connection to the database using the provided connection string
+// and authentication credentials. If successful, it sets the client field of the
+// Database struct to the newly created client.
 func (db *Database) Init() {
 	log.Println("[+] Initing database...")
 
@@ -42,6 +71,9 @@ func (db *Database) Init() {
 
 }
 
+// GetQueue retrieves a slice of models.UrlQueue from the Database.
+// It randomly selects 10 URLs from the queue and returns
+// them as a slice of models.UrlQueue.
 func (db *Database) GetQueue() []models.UrlQueue {
 
 	log.Println("[+] Getting queue...")
@@ -92,22 +124,15 @@ func (db *Database) GetQueue() []models.UrlQueue {
 	return queue
 }
 
+// AddToQueue adds a URL to the queue in the Database.
+//
+// It takes a parameter 'url' of type `models.UrlQueue` which represents the URL to be added.
 func (db *Database) AddToQueue(url models.UrlQueue) {
 	log.Println("[+] Adding to queue...", url.URL)
 
-	database, err := db.client.Database(context.Background(), "cedi_search")
+	col := openCollection(db, "url_queues")
 
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	col, err := database.Collection(context.TODO(), "url_queues")
-
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	_, err = col.CreateDocument(context.TODO(), url)
+	_, err := col.CreateDocument(context.TODO(), url)
 
 	if err != nil {
 		log.Fatalln(err)
@@ -117,6 +142,10 @@ func (db *Database) AddToQueue(url models.UrlQueue) {
 
 }
 
+// DeleteFromQueue deletes a URL from the queue in the Database.
+//
+// It takes a parameter `url` of type `models.UrlQueue`, which represents the URL to be deleted from the queue.
+// This function does not return any value.
 func (db *Database) DeleteFromQueue(url models.UrlQueue) {
 	log.Println("[+] Deleting from queue...", url.URL)
 
@@ -148,22 +177,15 @@ func (db *Database) DeleteFromQueue(url models.UrlQueue) {
 	log.Println("[+] Deleted from queue")
 }
 
+// SaveHTML saves the HTML of a crawled page to the database.
+//
+// page: the crawled page to be saved.
 func (db *Database) SaveHTML(page models.CrawledPage) {
 	log.Println("[+] Saving html...", page.URL)
 
-	database, err := db.client.Database(context.Background(), "cedi_search")
+	col := openCollection(db, "crawled_pages")
 
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	col, err := database.Collection(context.TODO(), "crawled_pages")
-
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	_, err = col.CreateDocument(context.TODO(), page)
+	_, err := col.CreateDocument(context.TODO(), page)
 
 	if err != nil {
 		log.Fatalln(err)
@@ -173,6 +195,13 @@ func (db *Database) SaveHTML(page models.CrawledPage) {
 
 }
 
+// CanQueueUrl checks if a URL can be queued.
+//
+// Parameters:
+// - url: the URL to check.
+//
+// Returns:
+// - bool: true if the URL can be queued, false otherwise.
 func (db *Database) CanQueueUrl(url string) bool {
 	ctx := driver.WithQueryCount(context.Background())
 	query := `FOR d IN url_queues 
@@ -225,6 +254,13 @@ func (db *Database) CanQueueUrl(url string) bool {
 
 }
 
+// GetCrawledPages retrieves crawled pages for a given source.
+//
+// Parameters:
+// - source: a string representing the source of the crawled pages. e.g. Jumia
+//
+// Returns:
+// - an array of models.CrawledPage representing the retrieved crawled pages.
 func (db *Database) GetCrawledPages(source string) []models.CrawledPage {
 
 	log.Printf("[+] Getting crawled pages for %s...", source)
@@ -280,22 +316,15 @@ func (db *Database) GetCrawledPages(source string) []models.CrawledPage {
 	return pages
 }
 
+// IndexProduct saves a product to the indexed_products collection in the database.
+//
+// It takes a parameter `product` of type `models.Product`.
 func (db *Database) IndexProduct(product models.Product) {
 	log.Println("[+] Saving product...", product.Name)
 
-	database, err := db.client.Database(context.Background(), "cedi_search")
+	col := openCollection(db, "indexed_products")
 
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	col, err := database.Collection(context.TODO(), "indexed_products")
-
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	_, err = col.CreateDocument(context.TODO(), product)
+	_, err := col.CreateDocument(context.TODO(), product)
 
 	if err != nil {
 		log.Fatalln(err)
@@ -305,6 +334,9 @@ func (db *Database) IndexProduct(product models.Product) {
 
 }
 
+// DeleteFromCrawledPages deletes a crawled page from the database.
+//
+// It takes a parameter of type `models.CrawledPage` which represents the page to be deleted.
 func (db *Database) DeleteFromCrawledPages(page models.CrawledPage) {
 	log.Println("[+] Deleting from crawled pages...", page.URL)
 
@@ -314,11 +346,7 @@ func (db *Database) DeleteFromCrawledPages(page models.CrawledPage) {
 		log.Fatalln(err)
 	}
 
-	col, err := database.Collection(context.TODO(), "indexed_pages")
-
-	if err != nil {
-		log.Fatalln(err)
-	}
+	col := openCollection(db, "indexed_pages")
 
 	_, err = col.CreateDocument(context.TODO(), page)
 
