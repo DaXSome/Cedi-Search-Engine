@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"os"
 
@@ -413,6 +414,8 @@ func (db *Database) UploadProducts() {
 
 	products := []models.AlgoliaData{}
 
+	searchSuggestionsIndex := []string{}
+
 	for {
 
 		var doc models.Product
@@ -424,6 +427,8 @@ func (db *Database) UploadProducts() {
 				ObjectID: doc.ProductID,
 				Product:  doc,
 			})
+
+			searchSuggestionsIndex = append(searchSuggestionsIndex, doc.Name)
 		}
 
 		if driver.IsNoMoreDocuments(err) {
@@ -439,6 +444,18 @@ func (db *Database) UploadProducts() {
 	index := client.InitIndex("products")
 
 	_, err = index.SaveObjects(products)
+
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	suggestionsIndexJson, err := json.MarshalIndent(searchSuggestionsIndex, "", "")
+
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	err = os.WriteFile("index.json", suggestionsIndexJson, 0644)
 
 	if err != nil {
 		log.Fatalln(err)
