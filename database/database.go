@@ -207,7 +207,21 @@ func (db *Database) CanQueueUrl(url string) bool {
 		log.Fatalln(err)
 	}
 
-	return urlQueuesCursor.Count() == 0 && crawledPagesCursor.Count() == 0
+	defer crawledPagesCursor.Close()
+
+	query = `FOR d IN indexed_pages 
+				FILTER d.url == @url
+				RETURN d`
+
+	indexedPagesCursor, err := database.Query(ctx, query, bindVars)
+
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	defer indexedPagesCursor.Close()
+
+	return urlQueuesCursor.Count() == 0 && crawledPagesCursor.Count() == 0 && indexedPagesCursor.Count() == 0
 
 }
 
