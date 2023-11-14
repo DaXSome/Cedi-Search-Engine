@@ -48,8 +48,6 @@ func (cr *Crawler) Crawl() {
 
 			log.Println("[+] Crawling: ", url.URL)
 
-			soup.Header("User-Agent", "cedisearchbot/0.1 (+https://cedi-search.vercel.app/about)")
-
 			resp := utils.FetchPage(url.URL)
 
 			doc := soup.HTMLParse(resp)
