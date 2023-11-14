@@ -7,6 +7,7 @@ import (
 
 	"github.com/Cedi-Search/Cedi-Search-Engine/database"
 	"github.com/Cedi-Search/Cedi-Search-Engine/models"
+	"github.com/Cedi-Search/Cedi-Search-Engine/utils"
 	"github.com/anaskhan96/soup"
 )
 
@@ -39,11 +40,7 @@ func (cr *Crawler) Crawl() {
 
 			soup.Header("User-Agent", "cedisearchbot/0.1 (+https://cedi-search.vercel.app/about)")
 
-			resp, err := soup.Get(url.URL)
-
-			if err != nil {
-				log.Fatalln(err)
-			}
+			resp := utils.FetchPage(url.URL)
 
 			doc := soup.HTMLParse(resp)
 

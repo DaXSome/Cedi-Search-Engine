@@ -10,6 +10,7 @@ import (
 
 	"github.com/Cedi-Search/Cedi-Search-Engine/database"
 	"github.com/Cedi-Search/Cedi-Search-Engine/models"
+	"github.com/Cedi-Search/Cedi-Search-Engine/utils"
 
 	"github.com/anaskhan96/soup"
 )
@@ -33,11 +34,8 @@ func queueProducts(db *database.Database, products []soup.Root) {
 
 func extractProducts(href string) ([]soup.Root, int) {
 	log.Println("[+] Extracting products from", href)
-	resp, err := soup.Get(href)
 
-	if err != nil {
-		log.Fatalln(err)
-	}
+	resp := utils.FetchPage(href)
 
 	doc := soup.HTMLParse(resp)
 
