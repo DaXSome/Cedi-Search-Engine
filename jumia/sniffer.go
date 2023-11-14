@@ -54,20 +54,19 @@ func extractProducts(href string) ([]soup.Root, int) {
 
 	totalPagesEl := doc.FindAll("a", "class", "pg")
 
-	// E.g. /groceries/?page=50#catalog-listing
-	lastPageLink := totalPagesEl[len(totalPagesEl)-1].Attrs()["href"]
-
-	eqSignSplit := strings.Split(lastPageLink, "=")
-
 	totalPages := 0
-	var err error
 
-	if len(eqSignSplit) > 1 {
+	if len(totalPagesEl) > 0 {
+		lastPageLink := totalPagesEl[len(totalPagesEl)-1].Attrs()["href"]
 
-		totalPages, err = strconv.Atoi(strings.Split(eqSignSplit[1], "#")[0])
+		eqSignSplit := strings.Split(lastPageLink, "=")
 
-		if err != nil {
-			log.Println(err)
+		var err error
+		if len(eqSignSplit) > 1 {
+			totalPages, err = strconv.Atoi(strings.Split(eqSignSplit[1], "#")[0])
+			if err != nil {
+				log.Println(err)
+			}
 		}
 	}
 
