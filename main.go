@@ -32,6 +32,7 @@ func main() {
 	jijiSniffer := jiji.NewSniffer(database)
 
 	jumiaIndexer := jumia.NewIndexer(database)
+	jijiIndexer := jiji.NewIndexer(database)
 
 	wg.Add(1)
 	go jumiaSniffer.Sniff(&wg)
@@ -41,6 +42,9 @@ func main() {
 
 	wg.Add(1)
 	go jumiaIndexer.Index(&wg)
+
+	wg.Add(1)
+	go jijiIndexer.Index(&wg)
 
 	crawler := crawler.NewCrawler(database)
 	crawler.Crawl()
