@@ -4,6 +4,7 @@ import (
 	"log"
 	"sync"
 
+	deus "github.com/Cedi-Search/Cedi-Search-Engine/Deus"
 	"github.com/Cedi-Search/Cedi-Search-Engine/crawler"
 	"github.com/Cedi-Search/Cedi-Search-Engine/database"
 	"github.com/Cedi-Search/Cedi-Search-Engine/jiji"
@@ -28,6 +29,7 @@ func main() {
 
 	jumiaSniffer := jumia.NewSniffer(database)
 	jijiSniffer := jiji.NewSniffer(database)
+	deusSniffer := deus.NewSniffer(database)
 
 	jumiaIndexer := jumia.NewIndexer(database)
 	jijiIndexer := jiji.NewIndexer(database)
@@ -37,6 +39,9 @@ func main() {
 
 	wg.Add(1)
 	go jijiSniffer.Sniff(&wg)
+
+	wg.Add(1)
+	go deusSniffer.Sniff(&wg)
 
 	wg.Add(1)
 	go jumiaIndexer.Index(&wg)
