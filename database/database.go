@@ -2,12 +2,10 @@ package database
 
 import (
 	"context"
-	"encoding/json"
 	"log"
 	"os"
 
 	models "github.com/Cedi-Search/Cedi-Search-Engine/models"
-	"github.com/algolia/algoliasearch-client-go/v3/algolia/search"
 	"github.com/arangodb/go-driver"
 	"github.com/arangodb/go-driver/http"
 )
@@ -357,89 +355,7 @@ func (db *Database) MovePageToIndexed(page models.CrawledPage) {
 
 }
 
-func (db *Database) UploadProducts() {
-	log.Println("[+] Preparing to upload db")
-
-	ctx := context.Background()
-	query := `FOR d IN indexed_products
-			RETURN {
-				product_id: d.product_id,
-				name: d.name,
-				price: d.price,
-				rating: d.rating,
-				description: d.description,
-				url: d.url,
-				source: d.source,
-				images: d.images
-			}
-			`
-	database, err := db.client.Database(ctx, "cedi_search")
-
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	cursor, err := database.Query(ctx, query, nil)
-
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	defer cursor.Close()
-
-	products := []models.AlgoliaData{}
-
-	searchSuggestionsIndex := []string{}
-
-	for {
-
-		var doc models.Product
-
-		_, err := cursor.ReadDocument(ctx, &doc)
-
-		if doc.URL != "" {
-			products = append(products, models.AlgoliaData{
-				ObjectID: doc.ProductID,
-				Product:  doc,
-			})
-
-			searchSuggestionsIndex = append(searchSuggestionsIndex, doc.Name)
-		}
-
-		if driver.IsNoMoreDocuments(err) {
-			break
-		} else if err != nil {
-			log.Fatalln(err)
-		}
-
-	}
-
-	client := search.NewClient(os.Getenv("ALGOLIA_APP_ID"), os.Getenv("ALGOLIA_API_KEY"))
-
-	index := client.InitIndex("products")
-
-	_, err = index.SaveObjects(products)
-
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	suggestionsIndexJson, err := json.MarshalIndent(searchSuggestionsIndex, "", "")
-
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	err = os.WriteFile("index.json", suggestionsIndexJson, 0644)
-
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	log.Println("[+] Uploaded products")
-
-}
-
+// DeleteCrawledPage deletes a crawled page from the database.
 func (db *Database) DeleteCrawledPage(url string) {
 	log.Println("[+] Deleting from crawled pages...", url)
 

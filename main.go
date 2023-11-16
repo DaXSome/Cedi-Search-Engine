@@ -26,8 +26,6 @@ func main() {
 
 	database.Init()
 
-	database.UploadProducts()
-
 	jumiaSniffer := jumia.NewSniffer(database)
 	jijiSniffer := jiji.NewSniffer(database)
 
