@@ -3,6 +3,7 @@ package jumia
 import (
 	"fmt"
 	"log"
+	"math/rand"
 	"strconv"
 	"strings"
 	"sync"
@@ -14,6 +15,15 @@ import (
 
 	"github.com/anaskhan96/soup"
 )
+
+// ShuffleLinks shuffles the order of links.
+func shuffleLinks(links []soup.Root) {
+	rand.New(rand.NewSource(time.Now().UnixNano()))
+
+	rand.Shuffle(len(links), func(i, j int) {
+		links[i], links[j] = links[j], links[i]
+	})
+}
 
 // queueProducts processes a list of products and adds eligible URLs to the queue.
 //
@@ -108,6 +118,8 @@ func (sl *SnifferImpl) Sniff(wg *sync.WaitGroup) {
 	doc := soup.HTMLParse(resp)
 
 	links := doc.FindAll("a", "role", "menuitem")
+
+	shuffleLinks(links)
 
 	for _, link := range links {
 		// E.g. https://www.jumia.com.gh/groceries

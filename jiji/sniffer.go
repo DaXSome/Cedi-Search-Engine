@@ -3,6 +3,7 @@ package jiji
 import (
 	"fmt"
 	"log"
+	"math/rand"
 	"strings"
 	"sync"
 	"time"
@@ -13,6 +14,15 @@ import (
 
 	"github.com/anaskhan96/soup"
 )
+
+// ShuffleLinks shuffles the order of links.
+func shuffleLinks(links []string) {
+	rand.New(rand.NewSource(time.Now().UnixNano()))
+
+	rand.Shuffle(len(links), func(i, j int) {
+		links[i], links[j] = links[j], links[i]
+	})
+}
 
 // queueProducts processes a list of products and adds eligible URLs to the queue.
 //
@@ -100,6 +110,8 @@ func (sl *SnifferImpl) Sniff(wg *sync.WaitGroup) {
 		"office-and-commercial-equipment-tools",
 		"repair-and-construction",
 	}
+
+	shuffleLinks(categories)
 
 	for _, category := range categories {
 
