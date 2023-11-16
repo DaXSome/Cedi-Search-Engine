@@ -105,11 +105,7 @@ func (sl *SnifferImpl) Sniff(wg *sync.WaitGroup) {
 
 	defer wg.Done()
 
-	resp, err := soup.Get("https://www.jumia.com.gh")
-
-	if err != nil {
-		log.Fatalln(err)
-	}
+	resp := utils.FetchPage("https://www.jumia.com.gh")
 
 	doc := soup.HTMLParse(resp)
 
