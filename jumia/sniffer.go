@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Cedi-Search/Cedi-Search-Engine/data"
 	"github.com/Cedi-Search/Cedi-Search-Engine/database"
-	"github.com/Cedi-Search/Cedi-Search-Engine/models"
 	"github.com/Cedi-Search/Cedi-Search-Engine/utils"
 
 	"github.com/anaskhan96/soup"
@@ -36,7 +36,7 @@ func queueProducts(db *database.Database, products []soup.Root) {
 		productLink := fmt.Sprintf("https://www.jumia.com.gh%s", link.Attrs()["href"])
 
 		if db.CanQueueUrl(productLink) {
-			db.AddToQueue(models.UrlQueue{
+			db.AddToQueue(data.UrlQueue{
 				URL:    productLink,
 				Source: "Jumia",
 			})
@@ -81,10 +81,6 @@ func extractProducts(href string) ([]soup.Root, int) {
 	}
 
 	return doc.FindAll("a", "class", "core"), totalPages
-}
-
-type Sniffer interface {
-	Sniff(wg *sync.WaitGroup)
 }
 
 type SnifferImpl struct {

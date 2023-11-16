@@ -7,12 +7,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Cedi-Search/Cedi-Search-Engine/data"
 	database "github.com/Cedi-Search/Cedi-Search-Engine/database"
-	"github.com/Cedi-Search/Cedi-Search-Engine/models"
 	"github.com/anaskhan96/soup"
 )
-
-type Indexer interface{}
 
 type IndexerImpl struct {
 	db *database.Database
@@ -88,7 +86,7 @@ func (il *IndexerImpl) Index(wg *sync.WaitGroup) {
 			productImages = append(productImages, parsedPage.Find("img", "class", "b-slider-image").Attrs()["src"])
 		}
 
-		productData := models.Product{
+		productData := data.Product{
 			Name:        productName,
 			Price:       price,
 			Rating:      0,

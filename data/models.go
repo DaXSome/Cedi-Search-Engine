@@ -1,4 +1,4 @@
-package models
+package data
 
 type UrlQueue struct {
 	URL    string `json:"url"`

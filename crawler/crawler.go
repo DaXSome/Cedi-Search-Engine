@@ -5,8 +5,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Cedi-Search/Cedi-Search-Engine/data"
 	"github.com/Cedi-Search/Cedi-Search-Engine/database"
-	"github.com/Cedi-Search/Cedi-Search-Engine/models"
 	"github.com/Cedi-Search/Cedi-Search-Engine/utils"
 	"github.com/anaskhan96/soup"
 )
@@ -44,7 +44,7 @@ func (cr *Crawler) Crawl() {
 	for _, url := range queue {
 
 		wg.Add(1)
-		go func(url models.UrlQueue) {
+		go func(url data.UrlQueue) {
 
 			log.Println("[+] Crawling: ", url.URL)
 
@@ -52,7 +52,7 @@ func (cr *Crawler) Crawl() {
 
 			doc := soup.HTMLParse(resp)
 
-			cr.db.SaveHTML(models.CrawledPage{
+			cr.db.SaveHTML(data.CrawledPage{
 				URL:    url.URL,
 				HTML:   doc.HTML(),
 				Source: url.Source,

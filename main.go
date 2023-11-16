@@ -4,9 +4,10 @@ import (
 	"log"
 	"sync"
 
-	deus "github.com/Cedi-Search/Cedi-Search-Engine/Deus"
 	"github.com/Cedi-Search/Cedi-Search-Engine/crawler"
+	"github.com/Cedi-Search/Cedi-Search-Engine/data"
 	"github.com/Cedi-Search/Cedi-Search-Engine/database"
+	"github.com/Cedi-Search/Cedi-Search-Engine/deus"
 	"github.com/Cedi-Search/Cedi-Search-Engine/jiji"
 	"github.com/Cedi-Search/Cedi-Search-Engine/jumia"
 	"github.com/anaskhan96/soup"
@@ -27,31 +28,27 @@ func main() {
 
 	database.Init()
 
-	jumiaSniffer := jumia.NewSniffer(database)
-	jijiSniffer := jiji.NewSniffer(database)
-	deusSniffer := deus.NewSniffer(database)
+	sniffers := []data.Sniffer{
+		jumia.NewSniffer(database),
+		jiji.NewSniffer(database),
+		deus.NewSniffer(database),
+	}
 
-	jumiaIndexer := jumia.NewIndexer(database)
-	jijiIndexer := jiji.NewIndexer(database)
-	deusIndexer := deus.NewIndexer(database)
+	indexers := []data.Indexer{
+		jumia.NewIndexer(database),
+		jiji.NewIndexer(database),
+		deus.NewIndexer(database),
+	}
 
-	wg.Add(1)
-	go jumiaSniffer.Sniff(&wg)
+	wg.Add(len(sniffers))
+	for _, sniffer := range sniffers {
+		go sniffer.Sniff(&wg)
+	}
 
-	wg.Add(1)
-	go jijiSniffer.Sniff(&wg)
-
-	wg.Add(1)
-	go deusSniffer.Sniff(&wg)
-
-	wg.Add(1)
-	go jumiaIndexer.Index(&wg)
-
-	wg.Add(1)
-	go jijiIndexer.Index(&wg)
-
-	wg.Add(1)
-	go deusIndexer.Index(&wg)
+	wg.Add(len(indexers))
+	for _, indexer := range indexers {
+		go indexer.Index(&wg)
+	}
 
 	crawler := crawler.NewCrawler(database)
 	crawler.Crawl()

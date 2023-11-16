@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	models "github.com/Cedi-Search/Cedi-Search-Engine/models"
+	"github.com/Cedi-Search/Cedi-Search-Engine/data"
 	"github.com/arangodb/go-driver"
 	"github.com/arangodb/go-driver/http"
 )
@@ -71,10 +71,10 @@ func (db *Database) Init() {
 
 }
 
-// GetQueue retrieves a slice of models.UrlQueue from the Database.
+// GetQueue retrieves a slice of data.UrlQueue from the Database.
 // It randomly selects 10 URLs from the queue and returns
-// them as a slice of models.UrlQueue.
-func (db *Database) GetQueue() []models.UrlQueue {
+// them as a slice of data.UrlQueue.
+func (db *Database) GetQueue() []data.UrlQueue {
 
 	log.Println("[+] Getting queue...")
 
@@ -99,11 +99,11 @@ func (db *Database) GetQueue() []models.UrlQueue {
 
 	defer cursor.Close()
 
-	queue := []models.UrlQueue{}
+	queue := []data.UrlQueue{}
 
 	for {
 
-		var doc models.UrlQueue
+		var doc data.UrlQueue
 
 		_, err := cursor.ReadDocument(ctx, &doc)
 
@@ -126,8 +126,8 @@ func (db *Database) GetQueue() []models.UrlQueue {
 
 // AddToQueue adds a URL to the queue in the Database.
 //
-// It takes a parameter 'url' of type `models.UrlQueue` which represents the URL to be added.
-func (db *Database) AddToQueue(url models.UrlQueue) {
+// It takes a parameter 'url' of type `data.UrlQueue` which represents the URL to be added.
+func (db *Database) AddToQueue(url data.UrlQueue) {
 	log.Println("[+] Adding to queue...", url.URL)
 
 	col := openCollection(db, "url_queues")
@@ -144,9 +144,9 @@ func (db *Database) AddToQueue(url models.UrlQueue) {
 
 // DeleteFromQueue deletes a URL from the queue in the Database.
 //
-// It takes a parameter `url` of type `models.UrlQueue`, which represents the URL to be deleted from the queue.
+// It takes a parameter `url` of type `data.UrlQueue`, which represents the URL to be deleted from the queue.
 // This function does not return any value.
-func (db *Database) DeleteFromQueue(url models.UrlQueue) {
+func (db *Database) DeleteFromQueue(url data.UrlQueue) {
 	log.Println("[+] Deleting from queue...", url.URL)
 
 	ctx := context.Background()
@@ -180,7 +180,7 @@ func (db *Database) DeleteFromQueue(url models.UrlQueue) {
 // SaveHTML saves the HTML of a crawled page to the database.
 //
 // page: the crawled page to be saved.
-func (db *Database) SaveHTML(page models.CrawledPage) {
+func (db *Database) SaveHTML(page data.CrawledPage) {
 	log.Println("[+] Saving html...", page.URL)
 
 	col := openCollection(db, "crawled_pages")
@@ -260,8 +260,8 @@ func (db *Database) CanQueueUrl(url string) bool {
 // - source: a string representing the source of the crawled pages. e.g. Jumia
 //
 // Returns:
-// - an array of models.CrawledPage representing the retrieved crawled pages.
-func (db *Database) GetCrawledPages(source string) []models.CrawledPage {
+// - an array of data.CrawledPage representing the retrieved crawled pages.
+func (db *Database) GetCrawledPages(source string) []data.CrawledPage {
 
 	log.Printf("[+] Getting crawled pages for %s...", source)
 
@@ -291,11 +291,11 @@ func (db *Database) GetCrawledPages(source string) []models.CrawledPage {
 
 	defer cursor.Close()
 
-	pages := []models.CrawledPage{}
+	pages := []data.CrawledPage{}
 
 	for {
 
-		var doc models.CrawledPage
+		var doc data.CrawledPage
 
 		_, err := cursor.ReadDocument(ctx, &doc)
 
@@ -318,8 +318,8 @@ func (db *Database) GetCrawledPages(source string) []models.CrawledPage {
 
 // IndexProduct saves a product to the indexed_products collection in the database.
 //
-// It takes a parameter `product` of type `models.Product`.
-func (db *Database) IndexProduct(product models.Product) {
+// It takes a parameter `product` of type `data.Product`.
+func (db *Database) IndexProduct(product data.Product) {
 	log.Println("[+] Saving product...", product.Name)
 
 	col := openCollection(db, "indexed_products")
@@ -337,8 +337,8 @@ func (db *Database) IndexProduct(product models.Product) {
 // DeleteFromCrawledPages deletes a crawled page from the database.
 // And moves it to the indexed pages collection
 //
-// It takes a parameter of type `models.CrawledPage` which represents the page to be deleted.
-func (db *Database) MovePageToIndexed(page models.CrawledPage) {
+// It takes a parameter of type `data.CrawledPage` which represents the page to be deleted.
+func (db *Database) MovePageToIndexed(page data.CrawledPage) {
 	log.Println("[+] Moving from crawled pages...", page.URL)
 
 	col := openCollection(db, "indexed_pages")
