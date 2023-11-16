@@ -1,10 +1,8 @@
 package utils
 
 import (
-	"log"
-	"time"
-
-	"github.com/anaskhan96/soup"
+	"github.com/go-rod/rod"
+	"github.com/go-rod/rod/lib/proto"
 )
 
 // FetchPage fetches the content of a web page given its URL.
@@ -12,21 +10,17 @@ import (
 // href: The URL of the web page to fetch.
 func FetchPage(href string) string {
 
-	resp, err := soup.Get(href)
+	browser := rod.New().MustConnect()
 
-	if err != nil {
-		for {
-			log.Println("[+] Retrying: ", href)
+	page := browser.MustPage()
 
-			resp, err = soup.Get(href)
+	page.SetUserAgent(&proto.NetworkSetUserAgentOverride{
+		UserAgent: "cedisearchbot/0.1 (+https://cedi-search.vercel.app/about)",
+	})
 
-			if err == nil {
-				break
-			}
+	page.Navigate(href)
 
-			time.Sleep(10 * time.Second)
-		}
-	}
+	html := page.MustWaitStable().MustHTML()
 
-	return resp
+	return html
 }
