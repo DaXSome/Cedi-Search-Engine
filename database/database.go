@@ -337,48 +337,23 @@ func (db *Database) IndexProduct(product models.Product) {
 }
 
 // DeleteFromCrawledPages deletes a crawled page from the database.
+// And moves it to the indexed pages collection
 //
 // It takes a parameter of type `models.CrawledPage` which represents the page to be deleted.
-func (db *Database) DeleteFromCrawledPages(page models.CrawledPage) {
-	log.Println("[+] Deleting from crawled pages...", page.URL)
-
-	database, err := db.client.Database(context.Background(), "cedi_search")
-
-	if err != nil {
-		log.Fatalln(err)
-	}
+func (db *Database) MovePageToIndexed(page models.CrawledPage) {
+	log.Println("[+] Moving from crawled pages...", page.URL)
 
 	col := openCollection(db, "indexed_pages")
 
-	_, err = col.CreateDocument(context.TODO(), page)
+	_, err := col.CreateDocument(context.TODO(), page)
 
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	query := `FOR d IN crawled_pages 
-			FILTER d.url == @url
-			REMOVE d IN crawled_pages
-			RETURN OLD
-			`
+	db.DeleteCrawledPage(page.URL)
 
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	bindVars := map[string]interface{}{
-		"url": page.URL,
-	}
-
-	cursor, err := database.Query(context.Background(), query, bindVars)
-
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	cursor.Close()
-
-	log.Println("[+] Deleted Crawled page!")
+	log.Println("[+] Moved Crawled page!")
 
 }
 
@@ -462,5 +437,40 @@ func (db *Database) UploadProducts() {
 	}
 
 	log.Println("[+] Uploaded products")
+
+}
+
+func (db *Database) DeleteCrawledPage(url string) {
+	log.Println("[+] Deleting from crawled pages...", url)
+
+	database, err := db.client.Database(context.Background(), "cedi_search")
+
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	query := `FOR d IN crawled_pages 
+			FILTER d.url == @url
+			REMOVE d IN crawled_pages
+			RETURN OLD
+			`
+
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	bindVars := map[string]interface{}{
+		"url": url,
+	}
+
+	cursor, err := database.Query(context.Background(), query, bindVars)
+
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	cursor.Close()
+
+	log.Println("[+] Deleted Crawled page!")
 
 }

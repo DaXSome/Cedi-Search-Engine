@@ -59,6 +59,7 @@ func (il *IndexerImpl) Index(wg *sync.WaitGroup) {
 		productPriceEl := parsedPage.Find("span", "itemprop", "price")
 
 		if productPriceEl.Error != nil {
+			il.db.DeleteCrawledPage(page.URL)
 			continue
 		}
 
@@ -99,7 +100,7 @@ func (il *IndexerImpl) Index(wg *sync.WaitGroup) {
 		}
 
 		il.db.IndexProduct(productData)
-		il.db.DeleteFromCrawledPages(page)
+		il.db.MovePageToIndexed(page)
 
 	}
 

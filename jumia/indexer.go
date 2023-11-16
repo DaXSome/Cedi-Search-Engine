@@ -58,10 +58,11 @@ func (il *IndexerImpl) Index(wg *sync.WaitGroup) {
 		productPriceStirng := ""
 
 		if productPriceStirngEl.Error != nil {
+			il.db.DeleteCrawledPage(page.URL)
 			continue
-		} else {
-			productPriceStirng = productPriceStirngEl.Text()
 		}
+
+		productPriceStirng = productPriceStirngEl.Text()
 
 		priceParts := strings.Split(productPriceStirng, " ")[1]
 
@@ -118,7 +119,7 @@ func (il *IndexerImpl) Index(wg *sync.WaitGroup) {
 		}
 
 		il.db.IndexProduct(productData)
-		il.db.DeleteFromCrawledPages(page)
+		il.db.MovePageToIndexed(page)
 
 	}
 
