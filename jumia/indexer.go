@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/Cedi-Search/Cedi-Search-Engine/data"
-	database "github.com/Cedi-Search/Cedi-Search-Engine/database"
+	"github.com/Cedi-Search/Cedi-Search-Engine/database"
 	"github.com/anaskhan96/soup"
 )
 
