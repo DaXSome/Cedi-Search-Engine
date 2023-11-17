@@ -49,7 +49,14 @@ func (il *IndexerImpl) Index(wg *sync.WaitGroup) {
 	for _, page := range pages {
 		parsedPage := soup.HTMLParse(page.HTML)
 
-		productName := parsedPage.Find("span", "itemprop", "name").Text()
+		productNameEl := parsedPage.Find("span", "itemprop", "name")
+
+		if productNameEl.Error != nil {
+			il.db.DeleteCrawledPage(page.URL)
+			continue
+		}
+
+		productName := productNameEl.Text()
 
 		productPriceStirng := parsedPage.Find("span", "data-price-type", "finalPrice").Attrs()["data-price-amount"]
 

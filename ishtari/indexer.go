@@ -50,9 +50,14 @@ func (il *IndexerImpl) Index(wg *sync.WaitGroup) {
 	for _, page := range pages {
 		parsedPage := soup.HTMLParse(page.HTML)
 
-		log.Println(page.URL)
+		productNameEl := parsedPage.Find("h1", "class", "text-d22")
 
-		productName := parsedPage.Find("h1", "class", "text-d22").Text()
+		if productNameEl.Error != nil {
+			il.db.DeleteCrawledPage(page.URL)
+			continue
+		}
+
+		productName := productNameEl.Text()
 
 		productPriceStirng := strings.ReplaceAll(parsedPage.Find("span", "class", "false").Text(), " GH¢", "")
 
