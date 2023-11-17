@@ -112,8 +112,6 @@ func (sl *SnifferImpl) Sniff(wg *sync.WaitGroup) {
 
 		products, totalPages := extractProducts(categoryLink)
 
-		log.Println(totalPages)
-
 		queueProducts(sl.db, products)
 
 		for i := 2; i <= totalPages; i++ {
