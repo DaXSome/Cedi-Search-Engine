@@ -4,10 +4,10 @@ import (
 	"log"
 	"sync"
 
-	"github.com/Cedi-Search/Cedi-Search-Engine/crawler"
 	"github.com/Cedi-Search/Cedi-Search-Engine/data"
 	"github.com/Cedi-Search/Cedi-Search-Engine/database"
 	"github.com/Cedi-Search/Cedi-Search-Engine/deus"
+	"github.com/Cedi-Search/Cedi-Search-Engine/ishtari"
 	"github.com/Cedi-Search/Cedi-Search-Engine/jiji"
 	"github.com/Cedi-Search/Cedi-Search-Engine/jumia"
 	"github.com/anaskhan96/soup"
@@ -32,6 +32,7 @@ func main() {
 		jumia.NewSniffer(database),
 		jiji.NewSniffer(database),
 		deus.NewSniffer(database),
+		ishtari.NewSniffer(database),
 	}
 
 	indexers := []data.Indexer{
@@ -50,8 +51,8 @@ func main() {
 		go indexer.Index(&wg)
 	}
 
-	crawler := crawler.NewCrawler(database)
-	crawler.Crawl()
+	// crawler := crawler.NewCrawler(database)
+	// crawler.Crawl()
 
 	wg.Wait()
 }
