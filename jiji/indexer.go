@@ -47,12 +47,17 @@ func (il *IndexerImpl) Index(wg *sync.WaitGroup) {
 	}
 
 	for _, page := range pages {
-		log.Println(page.URL)
 		parsedPage := soup.HTMLParse(page.HTML)
 
 		// E.g Kia Sorento 2.5 D Automatic 2003 Red in Akuapim South - Cars, Gabriel Sokah | Jiji.com.gh
-		productName := parsedPage.Find("title").Text()
+		productNameEl := parsedPage.Find("title")
 
+		if productNameEl.Error != nil {
+			il.db.DeleteCrawledPage(page.URL)
+			continue
+		}
+
+		productName := productNameEl.Text()
 		productName = strings.Split(productName, " in ")[0]
 
 		productPriceEl := parsedPage.Find("span", "itemprop", "price")
