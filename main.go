@@ -11,6 +11,7 @@ import (
 	"github.com/Cedi-Search/Cedi-Search-Engine/ishtari"
 	"github.com/Cedi-Search/Cedi-Search-Engine/jiji"
 	"github.com/Cedi-Search/Cedi-Search-Engine/jumia"
+	"github.com/Cedi-Search/Cedi-Search-Engine/oraimo"
 	"github.com/joho/godotenv"
 )
 
@@ -31,6 +32,7 @@ func main() {
 		jiji.NewSniffer(database),
 		deus.NewSniffer(database),
 		ishtari.NewSniffer(database),
+		oraimo.NewSniffer(database),
 	}
 
 	indexers := []data.Indexer{
