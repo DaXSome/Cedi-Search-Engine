@@ -40,6 +40,7 @@ func main() {
 		jiji.NewIndexer(database),
 		deus.NewIndexer(database),
 		ishtari.NewIndexer(database),
+		oraimo.NewIndexer(database),
 	}
 
 	crawler := crawler.NewCrawler(database)
@@ -49,6 +50,7 @@ func main() {
 		"Jiji",
 		"Deus",
 		"Ishtari",
+		"Oraimo",
 	}
 
 	wg.Add(len(sniffers))
