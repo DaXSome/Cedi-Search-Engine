@@ -63,12 +63,21 @@ func extractProducts(href string) ([]soup.Root, int) {
 
 	doc := soup.HTMLParse(resp)
 
-	paginationEl := doc.Find("ul", "class", "category-pagination").Children()
+	paginationEl := doc.Find("ul", "class", "category-pagination")
 
-	totalPages, err := strconv.Atoi(paginationEl[len(paginationEl)-2].FullText())
+	totalPages := 0
 
-	if err != nil {
-		log.Fatalln(err)
+	var err error
+
+	if paginationEl.Error == nil {
+		paginationChildren := paginationEl.Children()
+
+		totalPages, err = strconv.Atoi(paginationChildren[len(paginationChildren)-2].FullText())
+
+		if err != nil {
+			log.Fatalln(err)
+		}
+
 	}
 
 	return doc.FindAll("a", "class", "false"), totalPages
