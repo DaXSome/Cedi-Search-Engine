@@ -9,3 +9,7 @@ type Sniffer interface {
 type Indexer interface {
 	Index(wg *sync.WaitGroup)
 }
+
+type Crawler interface {
+	Crawl(source string)
+}

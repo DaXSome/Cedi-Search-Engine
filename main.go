@@ -40,6 +40,15 @@ func main() {
 		ishtari.NewIndexer(database),
 	}
 
+	crawler := crawler.NewCrawler(database)
+
+	sources := []string{
+		"Jumia",
+		"Jiji",
+		"Deus",
+		"Ishtari",
+	}
+
 	wg.Add(len(sniffers))
 	for _, sniffer := range sniffers {
 		go sniffer.Sniff(&wg)
@@ -50,8 +59,10 @@ func main() {
 		go indexer.Index(&wg)
 	}
 
-	crawler := crawler.NewCrawler(database)
-	crawler.Crawl()
+	wg.Add(len(sources))
+	for _, source := range sources {
+		go crawler.Crawl(source)
+	}
 
 	wg.Wait()
 }

@@ -31,8 +31,8 @@ func NewCrawler(database *database.Database) *Crawler {
 // For each URL, it fetches the page content, parses it, saves the HTML to the database,
 // and deletes the URL from the queue. Once all URLs have been crawled, it waits for 30 seconds
 // before calling itself recursively to continue the crawling process.
-func (cr *Crawler) Crawl() {
-	queue := cr.db.GetQueue()
+func (cr *Crawler) Crawl(source string) {
+	queue := cr.db.GetQueue(source)
 
 	if len(queue) == 0 {
 		log.Println("[+] Queue is empty!")
@@ -72,5 +72,5 @@ func (cr *Crawler) Crawl() {
 	log.Println("[+] Wait 30s to continue crawling")
 	time.Sleep(30 * time.Second)
 
-	cr.Crawl()
+	cr.Crawl(source)
 }

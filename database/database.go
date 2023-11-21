@@ -74,15 +74,16 @@ func (db *Database) Init() {
 // GetQueue retrieves a slice of data.UrlQueue from the Database.
 // It randomly selects 10 URLs from the queue and returns
 // them as a slice of data.UrlQueue.
-func (db *Database) GetQueue() []data.UrlQueue {
+func (db *Database) GetQueue(source string) []data.UrlQueue {
 
-	log.Println("[+] Getting queue...")
+	log.Printf("[+] Getting queue for %s\n", source)
 
 	ctx := context.Background()
 	query := `FOR d IN url_queues
+				FILTER d.source == @source
 				LET randomValue = RAND()
         		SORT randomValue ASC
-				LIMIT 10 
+				LIMIT 5
 				RETURN d
 			`
 	database, err := db.client.Database(ctx, "cedi_search")
@@ -91,7 +92,11 @@ func (db *Database) GetQueue() []data.UrlQueue {
 		log.Fatalln(err)
 	}
 
-	cursor, err := database.Query(ctx, query, nil)
+	bindVars := map[string]interface{}{
+		"source": source,
+	}
+
+	cursor, err := database.Query(ctx, query, bindVars)
 
 	if err != nil {
 		log.Fatalln(err)
