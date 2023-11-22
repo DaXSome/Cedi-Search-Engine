@@ -2,7 +2,6 @@ package deus
 
 import (
 	"log"
-	"math/rand"
 	"sync"
 	"time"
 
@@ -12,15 +11,6 @@ import (
 
 	"github.com/anaskhan96/soup"
 )
-
-// ShuffleLinks shuffles the order of links.
-func shuffleLinks(links []soup.Root) {
-	rand.New(rand.NewSource(time.Now().UnixNano()))
-
-	rand.Shuffle(len(links), func(i, j int) {
-		links[i], links[j] = links[j], links[i]
-	})
-}
 
 // queueProducts processes a list of products and adds eligible URLs to the queue.
 //
@@ -90,7 +80,7 @@ func (sl *SnifferImpl) Sniff(wg *sync.WaitGroup) {
 
 	links := doc.FindAll("a", "class", "child-cat-a")
 
-	shuffleLinks(links)
+	utils.ShuffleLinks(links)
 
 	for _, link := range links {
 		// E.g. https://deus.com.gh/shop/printer-supplies/epson.html
