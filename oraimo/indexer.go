@@ -63,12 +63,19 @@ func (il *IndexerImpl) Index(wg *sync.WaitGroup) {
 			log.Fatalln(err)
 		}
 
-		productRatingText := parsedPage.Find("div", "class", "rating-result").Attrs()["title"]
+		rating := 0.0
 
-		rating, err := strconv.ParseFloat(productRatingText, 64)
+		ratingEl := parsedPage.Find("div", "class", "rating-result")
 
-		if err != nil {
-			log.Fatalln(err)
+		if ratingEl.Error == nil {
+
+			productRatingText := ratingEl.Attrs()["title"]
+
+			rating, err = strconv.ParseFloat(productRatingText, 64)
+
+			if err != nil {
+				log.Fatalln(err)
+			}
 		}
 
 		productDescription := parsedPage.Find("div", "id", "description").FullText()
