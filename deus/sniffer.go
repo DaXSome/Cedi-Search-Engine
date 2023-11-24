@@ -45,7 +45,7 @@ func queueProducts(db *database.Database, products []soup.Root) {
 func extractProducts(href string) []soup.Root {
 	log.Println("[+] Extracting products from", href)
 
-	resp := utils.FetchPage(href)
+	resp := utils.FetchPage(href, "rod")
 
 	doc := soup.HTMLParse(resp)
 
@@ -74,7 +74,7 @@ func (sl *SnifferImpl) Sniff(wg *sync.WaitGroup) {
 
 	defer wg.Done()
 
-	resp := utils.FetchPage("https://deus.com.gh/")
+	resp := utils.FetchPage("https://deus.com.gh/", "rod")
 
 	doc := soup.HTMLParse(resp)
 

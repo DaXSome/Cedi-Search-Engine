@@ -3,6 +3,7 @@ package utils
 import (
 	"log"
 
+	"github.com/anaskhan96/soup"
 	"github.com/go-rod/rod"
 	"github.com/go-rod/rod/lib/proto"
 )
@@ -14,19 +15,36 @@ var browser = rod.New().MustConnect().WithPanic(func(i interface{}) {
 // FetchPage fetches the content of a web page given its URL.
 //
 // href: The URL of the web page to fetch.
-func FetchPage(href string) string {
+func FetchPage(href, fetcher string) string {
 
-	page := browser.MustPage()
+	log.Printf("[+] Fetching %s using %s", href, fetcher)
 
-	defer page.Close()
+	var html string
 
-	page.SetUserAgent(&proto.NetworkSetUserAgentOverride{
-		UserAgent: "cedisearchbot/0.1 (+https://cedi-search.vercel.app/about)",
-	})
+	if fetcher == "rod" {
 
-	page.Navigate(href)
+		page := browser.MustPage()
 
-	html := page.MustWaitStable().MustHTML()
+		defer page.Close()
+
+		page.SetUserAgent(&proto.NetworkSetUserAgentOverride{
+			UserAgent: "cedisearchbot/0.1 (+https://cedi-search.vercel.app/about)",
+		})
+
+		page.Navigate(href)
+
+		html = page.MustWaitStable().MustHTML()
+
+	} else {
+		var err error
+
+		html, err = soup.Get(href)
+
+		if err != nil {
+			log.Fatalln(err)
+		}
+
+	}
 
 	return html
 }

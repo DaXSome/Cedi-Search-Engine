@@ -12,12 +12,14 @@ import (
 	"github.com/Cedi-Search/Cedi-Search-Engine/jiji"
 	"github.com/Cedi-Search/Cedi-Search-Engine/jumia"
 	"github.com/Cedi-Search/Cedi-Search-Engine/oraimo"
+	"github.com/anaskhan96/soup"
 	"github.com/joho/godotenv"
 )
 
 func main() {
-
 	log.Println("[+] Startup")
+
+	soup.Header("User-Agent", "cedisearchbot/0.1 (+https://cedi-search.vercel.app/about)")
 
 	wg := sync.WaitGroup{}
 

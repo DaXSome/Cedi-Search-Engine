@@ -48,7 +48,13 @@ func (cr *Crawler) Crawl(source string) {
 
 			log.Println("[+] Crawling: ", url.URL)
 
-			resp := utils.FetchPage(url.URL)
+			var resp string
+
+			if url.Source == "Jiji" || url.Source == "Deus" {
+				resp = utils.FetchPage(url.URL, "soup")
+			} else {
+				resp = utils.FetchPage(url.URL, "rod")
+			}
 
 			doc := soup.HTMLParse(resp)
 

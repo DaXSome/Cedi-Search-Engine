@@ -59,7 +59,7 @@ func queueProducts(db *database.Database, products []soup.Root) {
 func extractProducts(href string) []soup.Root {
 	log.Println("[+] Extracting products from", href)
 
-	resp := utils.FetchPage(href)
+	resp := utils.FetchPage(href, "rod")
 
 	doc := soup.HTMLParse(resp)
 
