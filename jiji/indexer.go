@@ -94,7 +94,11 @@ func (il *IndexerImpl) Index(wg *sync.WaitGroup) {
 		}
 
 		if len(productImages) == 0 {
-			productImages = append(productImages, parsedPage.Find("img", "class", "b-slider-image").Attrs()["src"])
+			imageEl := parsedPage.Find("img", "class", "b-slider-image")
+
+			if imageEl.Error == nil {
+				productImages = append(productImages, imageEl.Attrs()["src"])
+			}
 		}
 
 		productData := data.Product{
