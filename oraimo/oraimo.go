@@ -2,6 +2,7 @@ package oraimo
 
 import (
 	"log"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -9,9 +10,19 @@ import (
 	"github.com/Cedi-Search/Cedi-Search-Engine/data"
 	"github.com/Cedi-Search/Cedi-Search-Engine/database"
 	"github.com/Cedi-Search/Cedi-Search-Engine/utils"
-
 	"github.com/anaskhan96/soup"
+	"github.com/google/uuid"
 )
+
+type Oraimo struct {
+	db *database.Database
+}
+
+func NewOraimo(db *database.Database) *Oraimo {
+	return &Oraimo{
+		db: db,
+	}
+}
 
 // queueProducts processes a list of products and adds eligible URLs to the queue.
 //
@@ -53,24 +64,84 @@ func extractProducts(href string) []soup.Root {
 	return doc.FindAll("a", "class", "product")
 }
 
-type SnifferImpl struct {
-	db *database.Database
-}
+func (oraimo *Oraimo) Index(wg *sync.WaitGroup) {
+	log.Println("[+] Indexing Oraimo...")
 
-// NewSniffer creates a new SnifferImpl instance.
-//
-// It takes a database as a parameter and returns a pointer to a SnifferImpl struct.
-func NewSniffer(database *database.Database) *SnifferImpl {
-	return &SnifferImpl{
-		db: database,
+	pages := oraimo.db.GetCrawledPages("Oraimo")
+
+	if len(pages) == 0 {
+		log.Println("[+] No pages to index for Oraimo!")
+		log.Println("[+] Waiting 60s to continue indexing...")
+
+		time.Sleep(60 * time.Second)
+
+		oraimo.Index(wg)
+
+		wg.Done()
+		return
 	}
+
+	for _, page := range pages {
+		parsedPage := soup.HTMLParse(page.HTML)
+
+		productName := parsedPage.Find("h1").FullText()
+		productName = strings.ReplaceAll(productName, "\n", "")
+		productName = strings.Trim(productName, " ")
+
+		productPriceStirng := parsedPage.Find("span", "class", "price").Text()
+		productPriceStirng = strings.ReplaceAll(productPriceStirng, "₵", "")
+
+		price, err := strconv.ParseFloat(strings.ReplaceAll(productPriceStirng, ",", ""), 64)
+		if err != nil {
+			log.Fatalln(err)
+		}
+
+		rating := 0.0
+
+		ratingEl := parsedPage.Find("div", "class", "rating-result")
+
+		if ratingEl.Error == nil {
+
+			productRatingText := ratingEl.Attrs()["title"]
+
+			rating, err = strconv.ParseFloat(productRatingText, 64)
+			if err != nil {
+				log.Fatalln(err)
+			}
+		}
+
+		productDescription := parsedPage.Find("div", "id", "description").FullText()
+
+		productID := uuid.New()
+
+		productImagesEl := parsedPage.FindAll("img", "class", "fotorama__img")
+
+		productImages := []string{}
+
+		for _, el := range productImagesEl {
+			productImages = append(productImages, el.Attrs()["src"])
+		}
+
+		productData := data.Product{
+			Name:        productName,
+			Price:       price,
+			Rating:      rating,
+			Description: productDescription,
+			URL:         page.URL,
+			Source:      page.Source,
+			ProductID:   productID.String(),
+			Images:      productImages,
+		}
+
+		oraimo.db.IndexProduct(productData)
+		oraimo.db.MovePageToIndexed(page)
+
+	}
+
+	oraimo.Index(wg)
 }
 
-// Sniff sniffs the website "https://gh.oraimo.com/"
-// and extracts link pages to be crawled later
-//
-// The function takes a pointer to a sync.WaitGroup as a parameter.
-func (sl *SnifferImpl) Sniff(wg *sync.WaitGroup) {
+func (oraimo *Oraimo) Sniff(wg *sync.WaitGroup) {
 	log.Println("[+] Sniffing...")
 
 	defer wg.Done()
@@ -91,7 +162,7 @@ func (sl *SnifferImpl) Sniff(wg *sync.WaitGroup) {
 
 			products := extractProducts(categoryLink)
 
-			queueProducts(sl.db, products)
+			queueProducts(oraimo.db, products)
 
 			log.Println("[+] Wait 15s to continue sniff")
 			time.Sleep(15 * time.Second)
@@ -99,3 +170,5 @@ func (sl *SnifferImpl) Sniff(wg *sync.WaitGroup) {
 
 	}
 }
+
+func (oraimo *Oraimo) String() string { return "Oraimo" }

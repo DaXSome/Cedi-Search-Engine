@@ -2,15 +2,21 @@ package deus
 
 import (
 	"log"
+	"strconv"
 	"sync"
 	"time"
 
 	"github.com/Cedi-Search/Cedi-Search-Engine/data"
 	"github.com/Cedi-Search/Cedi-Search-Engine/database"
 	"github.com/Cedi-Search/Cedi-Search-Engine/utils"
+	"github.com/google/uuid"
 
 	"github.com/anaskhan96/soup"
 )
+
+type Deus struct {
+	db *database.Database
+}
 
 // queueProducts processes a list of products and adds eligible URLs to the queue.
 //
@@ -18,7 +24,6 @@ import (
 // The function iterates over each 'link' in 'products' and generates a product link.
 // If the generated product link is eligible to be queued, it adds it to the database queue using 'db.AddToQueue'.
 func queueProducts(db *database.Database, products []soup.Root) {
-
 	for _, link := range products {
 		productLink := link.Attrs()["href"]
 
@@ -52,24 +57,74 @@ func extractProducts(href string) []soup.Root {
 	return doc.FindAll("a", "class", "product-item-photo")
 }
 
-type SnifferImpl struct {
-	db *database.Database
-}
-
-// NewSniffer creates a new SnifferImpl instance.
-//
-// It takes a database as a parameter and returns a pointer to a SnifferImpl struct.
-func NewSniffer(database *database.Database) *SnifferImpl {
-	return &SnifferImpl{
-		db: database,
+func NewDeus(db *database.Database) *Deus {
+	return &Deus{
+		db: db,
 	}
 }
 
-// Sniff sniffs the website "https://www.deus.com.gh"
-// and extracts link pages to be crawled later
-//
-// The function takes a pointer to a sync.WaitGroup as a parameter.
-func (sl *SnifferImpl) Sniff(wg *sync.WaitGroup) {
+func (deus *Deus) Index(wg *sync.WaitGroup) {
+	log.Println("[+] Indexing Deus...")
+
+	pages := deus.db.GetCrawledPages("Deus")
+
+	if len(pages) == 0 {
+		log.Println("[+] No pages to index for Deus!")
+		log.Println("[+] Waiting 60s to continue indexing...")
+
+		time.Sleep(60 * time.Second)
+
+		deus.Index(wg)
+
+		wg.Done()
+		return
+	}
+
+	for _, page := range pages {
+		parsedPage := soup.HTMLParse(page.HTML)
+
+		productNameEl := parsedPage.Find("span", "itemprop", "name")
+
+		if productNameEl.Error != nil {
+			deus.db.DeleteCrawledPage(page.URL)
+			continue
+		}
+
+		productName := productNameEl.Text()
+
+		productPriceStirng := parsedPage.Find("span", "data-price-type", "finalPrice").Attrs()["data-price-amount"]
+
+		price, err := strconv.ParseFloat(productPriceStirng, 64)
+		if err != nil {
+			log.Fatalln(err)
+		}
+
+		productDescription := parsedPage.Find("div", "class", "description").FullText()
+
+		productID := uuid.New()
+
+		productImage := parsedPage.Find("img", "class", "no-sirv-lazy-load").Attrs()["src"]
+
+		productData := data.Product{
+			Name:        productName,
+			Price:       price,
+			Rating:      0,
+			Description: productDescription,
+			URL:         page.URL,
+			Source:      page.Source,
+			ProductID:   productID.String(),
+			Images:      []string{productImage},
+		}
+
+		deus.db.IndexProduct(productData)
+		deus.db.MovePageToIndexed(page)
+
+	}
+
+	deus.Index(wg)
+}
+
+func (deus *Deus) Sniff(wg *sync.WaitGroup) {
 	log.Println("[+] Sniffing...")
 
 	defer wg.Done()
@@ -88,10 +143,13 @@ func (sl *SnifferImpl) Sniff(wg *sync.WaitGroup) {
 
 		products := extractProducts(categoryLink)
 
-		queueProducts(sl.db, products)
+		queueProducts(deus.db, products)
 
 		log.Println("[+] Wait 30s to continue sniff")
 		time.Sleep(30 * time.Second)
 
 	}
 }
+
+func (d *Deus) String() string { return "Deus" }
+

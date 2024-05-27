@@ -1,15 +1,11 @@
 package data
 
-import "sync"
+import (
+	"sync"
+)
 
-type Sniffer interface {
+type Target interface {
 	Sniff(wg *sync.WaitGroup)
-}
-
-type Indexer interface {
 	Index(wg *sync.WaitGroup)
-}
-
-type Crawler interface {
-	Crawl(source string)
+	String() string
 }

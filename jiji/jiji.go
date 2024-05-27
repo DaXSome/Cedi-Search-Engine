@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -11,9 +12,18 @@ import (
 	"github.com/Cedi-Search/Cedi-Search-Engine/data"
 	"github.com/Cedi-Search/Cedi-Search-Engine/database"
 	"github.com/Cedi-Search/Cedi-Search-Engine/utils"
-
 	"github.com/anaskhan96/soup"
 )
+
+type Jiji struct {
+	db *database.Database
+}
+
+func NewJiji(db *database.Database) *Jiji {
+	return &Jiji{
+		db: db,
+	}
+}
 
 // ShuffleLinks shuffles the order of links.
 func shuffleLinks(links []string) {
@@ -45,7 +55,6 @@ func queueProducts(db *database.Database, products []soup.Root) {
 		}
 
 	}
-
 }
 
 // extractProducts extracts products from a given href.
@@ -66,24 +75,97 @@ func extractProducts(href string) []soup.Root {
 	return doc.FindAll("a", "class", "b-list-advert-base")
 }
 
-type SnifferImpl struct {
-	db *database.Database
-}
+func (jiji *Jiji) Index(wg *sync.WaitGroup) {
+	log.Println("[+] Indexing Jiji...")
 
-// NewSniffer creates a new SnifferImpl instance.
-//
-// It takes a database as a parameter and returns a pointer to a SnifferImpl struct.
-func NewSniffer(database *database.Database) *SnifferImpl {
-	return &SnifferImpl{
-		db: database,
+	pages := jiji.db.GetCrawledPages("Jiji")
+
+	if len(pages) == 0 {
+		log.Println("[+] No pages to index for Jiji!")
+		log.Println("[+] Waiting 60s to continue indexing...")
+
+		time.Sleep(60 * time.Second)
+
+		jiji.Index(wg)
+
+		wg.Done()
+		return
 	}
+
+	for _, page := range pages {
+		parsedPage := soup.HTMLParse(page.HTML)
+
+		// E.g Kia Sorento 2.5 D Automatic 2003 Red in Akuapim South - Cars, Gabriel Sokah | Jiji.com.gh
+		productNameEl := parsedPage.Find("title")
+
+		if productNameEl.Error != nil {
+			jiji.db.DeleteCrawledPage(page.URL)
+			continue
+		}
+
+		productName := productNameEl.Text()
+		productName = strings.Split(productName, " in ")[0]
+
+		productPriceEl := parsedPage.Find("span", "itemprop", "price")
+
+		if productPriceEl.Error != nil {
+			jiji.db.DeleteCrawledPage(page.URL)
+			continue
+		}
+
+		productPriceString := productPriceEl.Attrs()["content"]
+
+		if productPriceString == "" {
+			jiji.db.DeleteCrawledPage(page.URL)
+			continue
+		}
+
+		price, err := strconv.ParseFloat(productPriceString, 64)
+		if err != nil {
+			log.Fatalln(err)
+		}
+
+		productDescription := parsedPage.Find("span", "class", "qa-description-text").Text()
+
+		productIDParts := strings.Split(page.URL, "-")
+		productID := strings.ReplaceAll(productIDParts[len(productIDParts)-1], ".html", "")
+
+		productImagesEl := parsedPage.FindAll("img", "class", "qa-carousel-thumbnail__image")
+
+		productImages := []string{}
+
+		for _, el := range productImagesEl {
+			productImages = append(productImages, el.Attrs()["src"])
+		}
+
+		if len(productImages) == 0 {
+			imageEl := parsedPage.Find("img", "class", "b-slider-image")
+
+			if imageEl.Error == nil {
+				productImages = append(productImages, imageEl.Attrs()["src"])
+			}
+		}
+
+		productData := data.Product{
+			Name:        productName,
+			Price:       price,
+			Rating:      0,
+			Description: productDescription,
+			URL:         page.URL,
+			Source:      page.Source,
+			ProductID:   productID,
+			Images:      productImages,
+		}
+
+		jiji.db.IndexProduct(productData)
+		jiji.db.MovePageToIndexed(page)
+
+	}
+
+	jiji.Index(wg)
 }
 
-// Sniff sniffs the website "https://www.jumia.com.gh"
-// and extracts link pages to be crawled later
-//
-// The function takes a pointer to a sync.WaitGroup as a parameter.
-func (sl *SnifferImpl) Sniff(wg *sync.WaitGroup) {
+func (jiji *Jiji) Sniff(wg *sync.WaitGroup) {
 	log.Println("[+] Sniffing...")
 
 	defer wg.Done()
@@ -119,7 +201,7 @@ func (sl *SnifferImpl) Sniff(wg *sync.WaitGroup) {
 			// E.g. https://jiji.com.gh/repair-and-construction?page=992
 			pageProducts := extractProducts(pageLink)
 
-			queueProducts(sl.db, pageProducts)
+			queueProducts(jiji.db, pageProducts)
 
 			if i%50 == 0 {
 				log.Println("[+] Wait 120s to continue sniff")
@@ -129,5 +211,6 @@ func (sl *SnifferImpl) Sniff(wg *sync.WaitGroup) {
 		}
 
 	}
-
 }
+
+func (jiji *Jiji) String() string { return "Jiji" }

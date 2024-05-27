@@ -29,45 +29,20 @@ func main() {
 
 	database.Init()
 
-	sniffers := []data.Sniffer{
-		jumia.NewSniffer(database),
-		jiji.NewSniffer(database),
-		deus.NewSniffer(database),
-		ishtari.NewSniffer(database),
-		oraimo.NewSniffer(database),
-	}
-
-	indexers := []data.Indexer{
-		jumia.NewIndexer(database),
-		jiji.NewIndexer(database),
-		deus.NewIndexer(database),
-		ishtari.NewIndexer(database),
-		oraimo.NewIndexer(database),
-	}
-
 	crawler := crawler.NewCrawler(database)
 
-	sources := []string{
-		"Jumia",
-		"Jiji",
-		"Deus",
-		"Ishtari",
-		"Oraimo",
+	targets := []data.Target{
+		deus.NewDeus(database),
+		jumia.NewJumia(database),
+		jiji.NewJiji(database),
+		ishtari.NewIshtari(database),
+		oraimo.NewOraimo(database),
 	}
 
-	wg.Add(len(sniffers))
-	for _, sniffer := range sniffers {
-		go sniffer.Sniff(&wg)
-	}
-
-	wg.Add(len(indexers))
-	for _, indexer := range indexers {
-		go indexer.Index(&wg)
-	}
-
-	wg.Add(len(sources))
-	for _, source := range sources {
-		go crawler.Crawl(source)
+	for _, target := range targets {
+		go target.Index(&wg)
+		go target.Sniff(&wg)
+		go crawler.Crawl(target.String())
 	}
 
 	wg.Wait()

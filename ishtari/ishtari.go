@@ -4,15 +4,26 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/Cedi-Search/Cedi-Search-Engine/data"
 	"github.com/Cedi-Search/Cedi-Search-Engine/database"
 	"github.com/Cedi-Search/Cedi-Search-Engine/utils"
-
 	"github.com/anaskhan96/soup"
+	"github.com/google/uuid"
 )
+
+type Ishtari struct {
+	db *database.Database
+}
+
+func NewIshtari(db *database.Database) *Ishtari {
+	return &Ishtari{
+		db: db,
+	}
+}
 
 // queueProducts processes a list of products and adds eligible URLs to the queue.
 //
@@ -35,7 +46,6 @@ func queueProducts(db *database.Database, products []soup.Root) {
 		}
 
 	}
-
 }
 
 // extractProducts extracts products from a given href.
@@ -63,7 +73,6 @@ func extractProducts(href string) ([]soup.Root, int) {
 		paginationChildren := paginationEl.Children()
 
 		totalPages, err = strconv.Atoi(paginationChildren[len(paginationChildren)-2].FullText())
-
 		if err != nil {
 			log.Fatalln(err)
 		}
@@ -73,24 +82,74 @@ func extractProducts(href string) ([]soup.Root, int) {
 	return doc.FindAll("a", "class", "false"), totalPages
 }
 
-type SnifferImpl struct {
-	db *database.Database
-}
+func (ishtari *Ishtari) Index(wg *sync.WaitGroup) {
+	log.Println("[+] Indexing Ishtari...")
 
-// NewSniffer creates a new SnifferImpl instance.
-//
-// It takes a database as a parameter and returns a pointer to a SnifferImpl struct.
-func NewSniffer(database *database.Database) *SnifferImpl {
-	return &SnifferImpl{
-		db: database,
+	pages := ishtari.db.GetCrawledPages("Ishtari")
+
+	if len(pages) == 0 {
+		log.Println("[+] No pages to index for Ishtari!")
+		log.Println("[+] Waiting 60s to continue indexing...")
+
+		time.Sleep(60 * time.Second)
+
+		ishtari.Index(wg)
+
+		wg.Done()
+		return
 	}
+
+	for _, page := range pages {
+		parsedPage := soup.HTMLParse(page.HTML)
+
+		productNameEl := parsedPage.Find("h1", "class", "text-d22")
+
+		if productNameEl.Error != nil {
+			ishtari.db.DeleteCrawledPage(page.URL)
+			continue
+		}
+
+		productName := productNameEl.Text()
+
+		productPriceStirng := strings.ReplaceAll(parsedPage.Find("span", "class", "false").Text(), " GH¢", "")
+
+		price, err := strconv.ParseFloat(strings.ReplaceAll(productPriceStirng, ",", ""), 64)
+		if err != nil {
+			log.Fatalln(err)
+		}
+
+		productDescription := parsedPage.Find("div", "class", "my-content").FullText()
+
+		productID := uuid.New()
+
+		productImagesEl := parsedPage.FindAll("img", "class", "border-dgreyZoom")
+
+		productImages := []string{}
+
+		for _, el := range productImagesEl {
+			productImages = append(productImages, el.Attrs()["src"])
+		}
+
+		productData := data.Product{
+			Name:        productName,
+			Price:       price,
+			Rating:      0,
+			Description: productDescription,
+			URL:         page.URL,
+			Source:      page.Source,
+			ProductID:   productID.String(),
+			Images:      productImages,
+		}
+
+		ishtari.db.IndexProduct(productData)
+		ishtari.db.MovePageToIndexed(page)
+
+	}
+
+	ishtari.Index(wg)
 }
 
-// Sniff sniffs the website "https://ishtari.com.gh/"
-// and extracts link pages to be crawled later
-//
-// The function takes a pointer to a sync.WaitGroup as a parameter.
-func (sl *SnifferImpl) Sniff(wg *sync.WaitGroup) {
+func (ishtari *Ishtari) Sniff(wg *sync.WaitGroup) {
 	log.Println("[+] Sniffing...")
 
 	defer wg.Done()
@@ -111,7 +170,7 @@ func (sl *SnifferImpl) Sniff(wg *sync.WaitGroup) {
 
 		products, totalPages := extractProducts(categoryLink)
 
-		queueProducts(sl.db, products)
+		queueProducts(ishtari.db, products)
 
 		for i := 2; i <= totalPages; i++ {
 			go func(i int) {
@@ -120,9 +179,8 @@ func (sl *SnifferImpl) Sniff(wg *sync.WaitGroup) {
 
 				pageProducts, _ := extractProducts(pageLink)
 
-				queueProducts(sl.db, pageProducts)
+				queueProducts(ishtari.db, pageProducts)
 			}(i)
-
 		}
 
 		log.Println("[+] Wait 120s to continue sniff")
@@ -130,3 +188,5 @@ func (sl *SnifferImpl) Sniff(wg *sync.WaitGroup) {
 
 	}
 }
+
+func (ishtari *Ishtari) String() string { return "Ishtari" }
