@@ -27,8 +27,6 @@ func main() {
 
 	database := database.NewDatabase()
 
-	database.Init()
-
 	crawler := crawler.NewCrawler(database)
 
 	targets := []data.Target{
@@ -39,6 +37,7 @@ func main() {
 		oraimo.NewOraimo(database),
 	}
 
+	wg.Add(len(targets))
 	for _, target := range targets {
 		go target.Index(&wg)
 		go target.Sniff(&wg)

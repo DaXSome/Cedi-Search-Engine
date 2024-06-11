@@ -1,25 +1,26 @@
 package data
 
 type UrlQueue struct {
-	URL    string `json:"url"`
-	Source string `json:"source"`
+	ID     string `bson:"_id"`
+	URL    string `bson:"url"`
+	Source string `bson:"source"`
 }
 
 type CrawledPage struct {
-	URL    string `json:"url"`
-	HTML   string `json:"html"`
-	Source string `json:"source"`
+	URL    string `bson:"url"`
+	HTML   string `bson:"html"`
+	Source string `bson:"source"`
 }
 
 type Product struct {
-	ProductID   string   `json:"product_id"`
-	Name        string   `json:"name"`
-	Price       float64  `json:"price"`
-	Rating      float64  `json:"rating"`
-	Description string   `json:"description"`
-	URL         string   `json:"url"`
-	Source      string   `json:"source"`
-	Images      []string `json:"images"`
+	ProductID   string   `bson:"_id"`
+	Name        string   `bson:"name"`
+	Price       float64  `bson:"price"`
+	Rating      float64  `bson:"rating"`
+	Description string   `bson:"description"`
+	URL         string   `bson:"url"`
+	Source      string   `bson:"source"`
+	Images      []string `bson:"images"`
 }
 
 type AlgoliaData struct {

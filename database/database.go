@@ -3,130 +3,54 @@ package database
 import (
 	"context"
 	"log"
+	netURL "net/url"
 	"os"
 
 	"github.com/Cedi-Search/Cedi-Search-Engine/data"
-	"github.com/arangodb/go-driver"
-	"github.com/arangodb/go-driver/http"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-// openCollection opens a collection in the database.
-//
-// It takes a pointer to a Database struct and the name of the collection as parameters.
-// It returns a driver.Collection.
-func openCollection(db *Database, collection string) driver.Collection {
-	database, err := db.client.Database(context.Background(), "cedi_search")
-
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	col, err := database.Collection(context.TODO(), collection)
-
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	return col
-
-}
-
 type Database struct {
-	client driver.Client
+	*mongo.Database
 }
 
 // NewDatabase initializes a new instance of the Database struct.
 //
 // Returns a pointer to the newly created Database.
 func NewDatabase() *Database {
-	return &Database{}
-}
-
-// Init initializes the database.
-//
-// It establishes a connection to the database using the provided connection string
-// and authentication credentials. If successful, it sets the client field of the
-// Database struct to the newly created client.
-func (db *Database) Init() {
 	log.Println("[+] Initing database...")
 
-	conn, err := http.NewConnection(http.ConnectionConfig{
-		Endpoints: []string{os.Getenv("DB_CONNECTION_STRING")},
-	})
+	dbURI := os.Getenv("DB_URI")
 
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	db.client, err = driver.NewClient(driver.ClientConfig{
-		Connection:     conn,
-		Authentication: driver.BasicAuthentication(os.Getenv("DB_USERNAME"), os.Getenv("DB_PASSWORD")),
-	})
-
+	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(dbURI))
 	if err != nil {
 		log.Fatalln(err)
 	}
 
 	log.Println("[+] Database initialized!")
 
+	return &Database{
+		client.Database("cedi_search"),
+	}
 }
 
 // GetQueue retrieves a slice of data.UrlQueue from the Database.
 // It randomly selects 10 URLs from the queue and returns
 // them as a slice of data.UrlQueue.
 func (db *Database) GetQueue(source string) []data.UrlQueue {
-
 	log.Printf("[+] Getting queue for %s\n", source)
 
-	ctx := context.Background()
-	query := `FOR d IN url_queues
-				FILTER d.source == @source
-				LET randomValue = RAND()
-        		SORT randomValue ASC
-				LIMIT 5
-				RETURN d
-			`
-	database, err := db.client.Database(ctx, "cedi_search")
-
+	res, err := db.Collection("url_queues").Find(context.TODO(), bson.D{{Key: "source", Value: source}}, &options.FindOptions{Limit: options.Count().SetLimit(5).Limit})
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	bindVars := map[string]interface{}{
-		"source": source,
-	}
+	var queues []data.UrlQueue
+	res.All(context.TODO(), &queues)
 
-	cursor, err := database.Query(ctx, query, bindVars)
-
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	defer cursor.Close()
-
-	queue := []data.UrlQueue{}
-
-	for {
-
-		var doc data.UrlQueue
-
-		_, err := cursor.ReadDocument(ctx, &doc)
-
-		if doc.URL != "" {
-			queue = append(queue, doc)
-		}
-
-		if driver.IsNoMoreDocuments(err) {
-			break
-		} else if err != nil {
-			log.Fatalln(err)
-		}
-
-	}
-
-	log.Println("[+] Queue retrieved!")
-
-	return queue
+	return queues
 }
 
 // AddToQueue adds a URL to the queue in the Database.
@@ -135,16 +59,19 @@ func (db *Database) GetQueue(source string) []data.UrlQueue {
 func (db *Database) AddToQueue(url data.UrlQueue) {
 	log.Println("[+] Adding to queue...", url.URL)
 
-	col := openCollection(db, "url_queues")
+	parsedURL, err := netURL.Parse(url.URL)
+	if err != nil {
+		log.Fatalln(err)
+	}
 
-	_, err := col.CreateDocument(context.TODO(), url)
+	url.ID = parsedURL.Path
 
+	_, err = db.Collection("url_queues").InsertOne(context.TODO(), url, &options.InsertOneOptions{})
 	if err != nil {
 		log.Fatalln(err)
 	}
 
 	log.Println("[+] Added to queue!")
-
 }
 
 // DeleteFromQueue deletes a URL from the queue in the Database.
@@ -154,30 +81,10 @@ func (db *Database) AddToQueue(url data.UrlQueue) {
 func (db *Database) DeleteFromQueue(url data.UrlQueue) {
 	log.Println("[+] Deleting from queue...", url.URL)
 
-	ctx := context.Background()
-	query := `FOR d IN url_queues 
-			FILTER d.url == @url
-			REMOVE d IN url_queues
-			RETURN OLD
-			`
-
-	database, err := db.client.Database(ctx, "cedi_search")
-
+	_, err := db.Collection("url_queues").DeleteOne(context.TODO(), url)
 	if err != nil {
 		log.Fatalln(err)
 	}
-
-	bindVars := map[string]interface{}{
-		"url": url.URL,
-	}
-
-	cursor, err := database.Query(ctx, query, bindVars)
-
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	cursor.Close()
 
 	log.Println("[+] Deleted from queue")
 }
@@ -188,16 +95,12 @@ func (db *Database) DeleteFromQueue(url data.UrlQueue) {
 func (db *Database) SaveHTML(page data.CrawledPage) {
 	log.Println("[+] Saving html...", page.URL)
 
-	col := openCollection(db, "crawled_pages")
-
-	_, err := col.CreateDocument(context.TODO(), page)
-
+	_, err := db.Collection("crawled_pages").InsertOne(context.TODO(), page)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
 	log.Println("[+] Saved HTML!")
-
 }
 
 // CanQueueUrl checks if a URL can be queued.
@@ -208,67 +111,19 @@ func (db *Database) SaveHTML(page data.CrawledPage) {
 // Returns:
 // - bool: true if the URL can be queued, false otherwise.
 func (db *Database) CanQueueUrl(url string) bool {
-	ctx := driver.WithQueryCount(context.Background())
-	query := `FOR d IN url_queues 
-				FILTER d.url == @url
-				RETURN d`
-
-	database, err := db.client.Database(ctx, "cedi_search")
-
+	parsedURL, err := netURL.Parse(url)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	bindVars := map[string]interface{}{
-		"url": url,
-	}
+	existsInQueue := db.Collection("url_queues").FindOne(context.TODO(), bson.D{{Key: "_id", Value: parsedURL.Path}}).Err() == nil
+	existsInCrawledPages := db.Collection("crawled_pages").FindOne(context.TODO(), bson.D{{Key: "_id", Value: parsedURL.Path}}) == nil
+	existsInIndexedPages := db.Collection("indexed_pages").FindOne(context.TODO(), bson.D{{Key: "_id", Value: parsedURL.Path}}) == nil
+	existsInIndexedProducts := db.Collection("indexed_products").FindOne(context.TODO(), bson.D{{Key: "_id", Value: parsedURL.Path}}) == nil
 
-	urlQueuesCursor, err := database.Query(ctx, query, bindVars)
+	canQueue := !existsInQueue && !existsInCrawledPages && !existsInIndexedPages && !existsInIndexedProducts
 
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	defer urlQueuesCursor.Close()
-
-	query = `FOR d IN crawled_pages 
-				FILTER d.url == @url
-				RETURN d`
-
-	crawledPagesCursor, err := database.Query(ctx, query, bindVars)
-
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	defer crawledPagesCursor.Close()
-
-	query = `FOR d IN indexed_pages 
-				FILTER d.url == @url
-				RETURN d`
-
-	indexedPagesCursor, err := database.Query(ctx, query, bindVars)
-
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	defer indexedPagesCursor.Close()
-
-	query = `FOR d IN uploaded_products
-				FILTER d.url == @url
-				RETURN d`
-
-	uploadedProductsCursor, err := database.Query(ctx, query, bindVars)
-
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	defer uploadedProductsCursor.Close()
-
-	return urlQueuesCursor.Count() == 0 && crawledPagesCursor.Count() == 0 && indexedPagesCursor.Count() == 0 && uploadedProductsCursor.Count() == 0
-
+	return canQueue
 }
 
 // GetCrawledPages retrieves crawled pages for a given source.
@@ -279,54 +134,15 @@ func (db *Database) CanQueueUrl(url string) bool {
 // Returns:
 // - an array of data.CrawledPage representing the retrieved crawled pages.
 func (db *Database) GetCrawledPages(source string) []data.CrawledPage {
-
 	log.Printf("[+] Getting crawled pages for %s...", source)
 
-	ctx := context.Background()
-	query := `FOR d IN crawled_pages
-				FILTER d.source == @source
-				LET randomValue = RAND()
-				SORT randomValue ASC
-				LIMIT 5
-				RETURN d
-			`
-	database, err := db.client.Database(ctx, "cedi_search")
-
+	res, err := db.Collection("crawled_pages").Find(context.TODO(), bson.D{{Key: "source", Value: source}}, &options.FindOptions{Limit: options.Count().SetLimit(5).Limit})
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	bindVars := map[string]interface{}{
-		"source": source,
-	}
-
-	cursor, err := database.Query(ctx, query, bindVars)
-
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	defer cursor.Close()
-
-	pages := []data.CrawledPage{}
-
-	for {
-
-		var doc data.CrawledPage
-
-		_, err := cursor.ReadDocument(ctx, &doc)
-
-		if doc.URL != "" {
-			pages = append(pages, doc)
-		}
-
-		if driver.IsNoMoreDocuments(err) {
-			break
-		} else if err != nil {
-			log.Fatalln(err)
-		}
-
-	}
+	var pages []data.CrawledPage
+	res.All(context.TODO(), &pages)
 
 	log.Printf("[+] Crawled pages for %s retrieved!", source)
 
@@ -339,16 +155,12 @@ func (db *Database) GetCrawledPages(source string) []data.CrawledPage {
 func (db *Database) IndexProduct(product data.Product) {
 	log.Println("[+] Saving product...", product.Name)
 
-	col := openCollection(db, "indexed_products")
-
-	_, err := col.CreateDocument(context.TODO(), product)
-
+	_, err := db.Collection("indexed_products").InsertOne(context.TODO(), product, &options.InsertOneOptions{})
 	if err != nil {
 		log.Fatalln(err)
 	}
 
 	log.Println("[+] Product Saved!")
-
 }
 
 // DeleteFromCrawledPages deletes a crawled page from the database.
@@ -358,52 +170,23 @@ func (db *Database) IndexProduct(product data.Product) {
 func (db *Database) MovePageToIndexed(page data.CrawledPage) {
 	log.Println("[+] Moving from crawled pages...", page.URL)
 
-	col := openCollection(db, "indexed_pages")
-
-	_, err := col.CreateDocument(context.TODO(), page)
-
+	_, err := db.Collection("indexed_pages").InsertOne(context.TODO(), page, &options.InsertOneOptions{})
 	if err != nil {
 		log.Fatalln(err)
 	}
 
 	db.DeleteCrawledPage(page.URL)
-
 	log.Println("[+] Moved Crawled page!")
-
 }
 
 // DeleteCrawledPage deletes a crawled page from the database.
 func (db *Database) DeleteCrawledPage(url string) {
 	log.Println("[+] Deleting from crawled pages...", url)
 
-	database, err := db.client.Database(context.Background(), "cedi_search")
-
+	_, err := db.Collection("crawled_pages").DeleteOne(context.TODO(), bson.D{{Key: "url", Value: url}})
 	if err != nil {
 		log.Fatalln(err)
 	}
-
-	query := `FOR d IN crawled_pages 
-			FILTER d.url == @url
-			REMOVE d IN crawled_pages
-			RETURN OLD
-			`
-
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	bindVars := map[string]interface{}{
-		"url": url,
-	}
-
-	cursor, err := database.Query(context.Background(), query, bindVars)
-
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	cursor.Close()
 
 	log.Println("[+] Deleted Crawled page!")
-
 }
