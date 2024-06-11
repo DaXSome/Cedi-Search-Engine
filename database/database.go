@@ -5,6 +5,7 @@ import (
 	"log"
 	netURL "net/url"
 	"os"
+	"strings"
 
 	"github.com/Cedi-Search/Cedi-Search-Engine/data"
 	"go.mongodb.org/mongo-driver/bson"
@@ -155,7 +156,14 @@ func (db *Database) GetCrawledPages(source string) []data.CrawledPage {
 func (db *Database) IndexProduct(product data.Product) {
 	log.Println("[+] Saving product...", product.Name)
 
-	_, err := db.Collection("indexed_products").InsertOne(context.TODO(), product, &options.InsertOneOptions{})
+	parsedURL, err := netURL.Parse(product.URL)
+	if err != nil {
+		log.Println(err)
+	}
+
+	product.Slug = strings.Split(parsedURL.Path, "/")[1]
+
+	_, err = db.Collection("indexed_products").InsertOne(context.TODO(), product, &options.InsertOneOptions{})
 	if err != nil {
 		log.Fatalln(err)
 	}
