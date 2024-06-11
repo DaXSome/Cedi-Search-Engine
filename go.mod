@@ -4,19 +4,16 @@ go 1.20
 
 require (
 	github.com/anaskhan96/soup v1.2.5
-	github.com/arangodb/go-driver v1.6.1
 	github.com/go-rod/rod v0.114.5
 	github.com/google/uuid v1.4.0
 	github.com/joho/godotenv v1.5.1
+	go.mongodb.org/mongo-driver v1.15.0
 )
 
 require (
-	github.com/arangodb/go-velocypack v0.0.0-20200318135517-5af53c29c67e // indirect
-	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/klauspost/compress v1.13.6 // indirect
 	github.com/montanaflynn/stats v0.0.0-20171201202039-1bf9dbcd8cbe // indirect
-	github.com/pkg/errors v0.9.1 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.1.2 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
@@ -26,7 +23,6 @@ require (
 	github.com/ysmood/got v0.34.1 // indirect
 	github.com/ysmood/gson v0.7.3 // indirect
 	github.com/ysmood/leakless v0.8.0 // indirect
-	go.mongodb.org/mongo-driver v1.15.0 // indirect
 	golang.org/x/crypto v0.17.0 // indirect
 	golang.org/x/net v0.17.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
