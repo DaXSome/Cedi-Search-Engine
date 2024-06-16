@@ -45,11 +45,18 @@ func queueProducts(db *database.Database, products []soup.Root) {
 		productLink := fmt.Sprintf("https://jiji.com.gh%s", link.Attrs()["href"])
 		productLink = strings.Split(productLink, "?")[0]
 
-		if db.CanQueueUrl(productLink) {
-			db.AddToQueue(data.UrlQueue{
+		canQueue, err := db.CanQueueUrl(productLink)
+		if utils.HandleErr(err, "Can't get queue for Jiji ") {
+			return
+		}
+
+		if canQueue {
+			err = db.AddToQueue(data.UrlQueue{
 				URL:    productLink,
 				Source: "Jiji",
 			})
+
+			utils.HandleErr(err, "Failed to add Jiji url to queue")
 		} else {
 			log.Println("[+] Skipping", productLink)
 		}
@@ -78,7 +85,10 @@ func extractProducts(href string) []soup.Root {
 func (jiji *Jiji) Index(wg *sync.WaitGroup) {
 	log.Println("[+] Indexing Jiji...")
 
-	pages := jiji.db.GetCrawledPages("Jiji")
+	pages, err := jiji.db.GetCrawledPages("Jiji")
+	if utils.HandleErr(err, "Failed to get Jiji crawled pages") {
+		return
+	}
 
 	if len(pages) == 0 {
 		log.Println("[+] No pages to index for Jiji!")
@@ -99,7 +109,8 @@ func (jiji *Jiji) Index(wg *sync.WaitGroup) {
 		productNameEl := parsedPage.Find("title")
 
 		if productNameEl.Error != nil {
-			jiji.db.DeleteCrawledPage(page.URL)
+			err := jiji.db.DeleteCrawledPage(page.URL)
+			utils.HandleErr(err, "Failed to delete Jiji crawled page")
 			continue
 		}
 
@@ -109,20 +120,22 @@ func (jiji *Jiji) Index(wg *sync.WaitGroup) {
 		productPriceEl := parsedPage.Find("span", "itemprop", "price")
 
 		if productPriceEl.Error != nil {
-			jiji.db.DeleteCrawledPage(page.URL)
+			err := jiji.db.DeleteCrawledPage(page.URL)
+			utils.HandleErr(err, "Failed to delete Jiji crawled page")
 			continue
 		}
 
 		productPriceString := productPriceEl.Attrs()["content"]
 
 		if productPriceString == "" {
-			jiji.db.DeleteCrawledPage(page.URL)
+			err := jiji.db.DeleteCrawledPage(page.URL)
+			utils.HandleErr(err, "Failed to delete Jiji crawled page")
 			continue
 		}
 
 		price, err := strconv.ParseFloat(productPriceString, 64)
-		if err != nil {
-			log.Fatalln(err)
+		if utils.HandleErr(err, "Failed to convert Jiji product price") {
+			return
 		}
 
 		productDescription := parsedPage.Find("span", "class", "qa-description-text").Text()
@@ -157,8 +170,13 @@ func (jiji *Jiji) Index(wg *sync.WaitGroup) {
 			Images:      productImages,
 		}
 
-		jiji.db.IndexProduct(productData)
-		jiji.db.MovePageToIndexed(page)
+		err = jiji.db.IndexProduct(productData)
+		if utils.HandleErr(err, "Failed to index Jiji product") {
+			return
+		}
+
+		err = jiji.db.MovePageToIndexed(page)
+		utils.HandleErr(err, "Failed to move Jiji page to indexed")
 
 	}
 

@@ -1,3 +1,4 @@
 .env
 cedisearch
 index.json
+errors.log

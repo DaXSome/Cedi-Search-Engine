@@ -34,11 +34,18 @@ func queueProducts(db *database.Database, products []soup.Root) {
 		// E.g. https://gh.oraimo.com/oraimo-freepods-lite-40-hour-playtime-enc-true-wireless-earbuds.html
 		productLink := link.Attrs()["href"]
 
-		if db.CanQueueUrl(productLink) {
-			db.AddToQueue(data.UrlQueue{
+		canQueue, err := db.CanQueueUrl(productLink)
+		if utils.HandleErr(err, "Failed to get Oraimo queue") {
+			return
+		}
+
+		if canQueue {
+			err = db.AddToQueue(data.UrlQueue{
 				URL:    productLink,
 				Source: "Oraimo",
 			})
+
+			utils.HandleErr(err, "Failed to add Oraimo to queue")
 		} else {
 			log.Println("[+] Skipping", productLink)
 		}
@@ -67,7 +74,10 @@ func extractProducts(href string) []soup.Root {
 func (oraimo *Oraimo) Index(wg *sync.WaitGroup) {
 	log.Println("[+] Indexing Oraimo...")
 
-	pages := oraimo.db.GetCrawledPages("Oraimo")
+	pages, err := oraimo.db.GetCrawledPages("Oraimo")
+	if utils.HandleErr(err, "Failed to get Oraimo crawled pages") {
+		return
+	}
 
 	if len(pages) == 0 {
 		log.Println("[+] No pages to index for Oraimo!")
@@ -92,8 +102,8 @@ func (oraimo *Oraimo) Index(wg *sync.WaitGroup) {
 		productPriceStirng = strings.ReplaceAll(productPriceStirng, "₵", "")
 
 		price, err := strconv.ParseFloat(strings.ReplaceAll(productPriceStirng, ",", ""), 64)
-		if err != nil {
-			log.Fatalln(err)
+		if utils.HandleErr(err, "Failed to parse Oraimo product price") {
+			return
 		}
 
 		rating := 0.0
@@ -133,9 +143,13 @@ func (oraimo *Oraimo) Index(wg *sync.WaitGroup) {
 			Images:      productImages,
 		}
 
-		oraimo.db.IndexProduct(productData)
-		oraimo.db.MovePageToIndexed(page)
+		err = oraimo.db.IndexProduct(productData)
+		if utils.HandleErr(err, "Failed to index Oraimo product") {
+			return
+		}
 
+		err = oraimo.db.MovePageToIndexed(page)
+		utils.HandleErr(err, "Failed to move Oraimo page to indexed")
 	}
 
 	oraimo.Index(wg)

@@ -28,11 +28,18 @@ func queueProducts(db *database.Database, products []soup.Root) {
 		// E.g. https://www.jumia.com.gh/jameson-irish-whiskey-750ml-51665215.html
 		productLink := fmt.Sprintf("https://www.jumia.com.gh%s", link.Attrs()["href"])
 
-		if db.CanQueueUrl(productLink) {
-			db.AddToQueue(data.UrlQueue{
+		canQueue, err := db.CanQueueUrl(productLink)
+		if utils.HandleErr(err, "Failed to get Jumia queue") {
+			return
+		}
+
+		if canQueue {
+			err = db.AddToQueue(data.UrlQueue{
 				URL:    productLink,
 				Source: "Jumia",
 			})
+
+			utils.HandleErr(err, "Failed to add Jumia to queue")
 		} else {
 			log.Println("[+] Skipping", productLink)
 		}
@@ -85,7 +92,10 @@ func NewJumia(db *database.Database) *Jumia {
 func (jumia *Jumia) Index(wg *sync.WaitGroup) {
 	log.Println("[+] Indexing Jumia...")
 
-	pages := jumia.db.GetCrawledPages("Jumia")
+	pages, err := jumia.db.GetCrawledPages("Jumia")
+	if utils.HandleErr(err, "Failed to get crawled pages for Jumia") {
+		return
+	}
 
 	if len(pages) == 0 {
 		log.Println("[+] No pages to index for Jumia!")
@@ -105,7 +115,8 @@ func (jumia *Jumia) Index(wg *sync.WaitGroup) {
 		productNameEl := parsedPage.Find("h1")
 
 		if productNameEl.Error != nil {
-			jumia.db.DeleteCrawledPage(page.URL)
+			err := jumia.db.DeleteCrawledPage(page.URL)
+			utils.HandleErr(err, "Failed to delete Jumia crawled page")
 			continue
 		}
 
@@ -116,7 +127,8 @@ func (jumia *Jumia) Index(wg *sync.WaitGroup) {
 		productPriceStirng := ""
 
 		if productPriceStirngEl.Error != nil {
-			jumia.db.DeleteCrawledPage(page.URL)
+			err := jumia.db.DeleteCrawledPage(page.URL)
+			utils.HandleErr(err, "Failed to delete Jumia crawled page")
 			continue
 		}
 
@@ -174,8 +186,13 @@ func (jumia *Jumia) Index(wg *sync.WaitGroup) {
 			Images:      productImages,
 		}
 
-		jumia.db.IndexProduct(productData)
-		jumia.db.MovePageToIndexed(page)
+		err = jumia.db.IndexProduct(productData)
+		if utils.HandleErr(err, "Failed to index Jumia Product") {
+			return
+		}
+
+		err = jumia.db.MovePageToIndexed(page)
+		utils.HandleErr(err, "Failed to move Jumia page to indexed")
 
 	}
 

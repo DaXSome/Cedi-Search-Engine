@@ -36,11 +36,18 @@ func queueProducts(db *database.Database, products []soup.Root) {
 		// E.g. https://ishtari.com.gh/USB-Desktop-Microphone-With-Tripod-/p=815
 		productLink := fmt.Sprintf("https://ishtari.com.gh%s", link.Attrs()["href"])
 
-		if db.CanQueueUrl(productLink) {
-			db.AddToQueue(data.UrlQueue{
+		canQueue, err := db.CanQueueUrl(productLink)
+		if utils.HandleErr(err, "Failed to get Ishtari queue") {
+			return
+		}
+
+		if canQueue {
+			err = db.AddToQueue(data.UrlQueue{
 				URL:    productLink,
 				Source: "Ishtari",
 			})
+
+			utils.HandleErr(err, "Failed to add Ishtari to queue")
 		} else {
 			log.Println("[+] Skipping", productLink)
 		}
@@ -85,7 +92,10 @@ func extractProducts(href string) ([]soup.Root, int) {
 func (ishtari *Ishtari) Index(wg *sync.WaitGroup) {
 	log.Println("[+] Indexing Ishtari...")
 
-	pages := ishtari.db.GetCrawledPages("Ishtari")
+	pages, err := ishtari.db.GetCrawledPages("Ishtari")
+	if utils.HandleErr(err, "Failed to get Ishtari crawled pages") {
+		return
+	}
 
 	if len(pages) == 0 {
 		log.Println("[+] No pages to index for Ishtari!")
@@ -105,7 +115,8 @@ func (ishtari *Ishtari) Index(wg *sync.WaitGroup) {
 		productNameEl := parsedPage.Find("h1", "class", "text-d22")
 
 		if productNameEl.Error != nil {
-			ishtari.db.DeleteCrawledPage(page.URL)
+			err = ishtari.db.DeleteCrawledPage(page.URL)
+			utils.HandleErr(err, "Failed to delete Ishtari crawled page")
 			continue
 		}
 
@@ -114,8 +125,8 @@ func (ishtari *Ishtari) Index(wg *sync.WaitGroup) {
 		productPriceStirng := strings.ReplaceAll(parsedPage.Find("span", "class", "false").Text(), " GH¢", "")
 
 		price, err := strconv.ParseFloat(strings.ReplaceAll(productPriceStirng, ",", ""), 64)
-		if err != nil {
-			log.Fatalln(err)
+		if utils.HandleErr(err, "Failed to parse Ishtari product price") {
+			return
 		}
 
 		productDescription := parsedPage.Find("div", "class", "my-content").FullText()
@@ -141,9 +152,13 @@ func (ishtari *Ishtari) Index(wg *sync.WaitGroup) {
 			Images:      productImages,
 		}
 
-		ishtari.db.IndexProduct(productData)
-		ishtari.db.MovePageToIndexed(page)
+		err = ishtari.db.IndexProduct(productData)
+		if utils.HandleErr(err, "Failed to index Ishtari product") {
+			return
+		}
 
+		err = ishtari.db.MovePageToIndexed(page)
+		utils.HandleErr(err, "Failed to move Ishtari page to indexed")
 	}
 
 	ishtari.Index(wg)

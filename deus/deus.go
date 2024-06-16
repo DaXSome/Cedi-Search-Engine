@@ -27,11 +27,18 @@ func queueProducts(db *database.Database, products []soup.Root) {
 	for _, link := range products {
 		productLink := link.Attrs()["href"]
 
-		if db.CanQueueUrl(productLink) {
-			db.AddToQueue(data.UrlQueue{
+		canQueue, err := db.CanQueueUrl(productLink)
+		if utils.HandleErr(err, "Failed to check Deus product queue") {
+			continue
+		}
+
+		if canQueue {
+			err := db.AddToQueue(data.UrlQueue{
 				URL:    productLink,
 				Source: "Deus",
 			})
+
+			utils.HandleErr(err, "Failed to queue Deus product")
 		} else {
 			log.Println("[+] Skipping", productLink)
 		}
@@ -66,7 +73,10 @@ func NewDeus(db *database.Database) *Deus {
 func (deus *Deus) Index(wg *sync.WaitGroup) {
 	log.Println("[+] Indexing Deus...")
 
-	pages := deus.db.GetCrawledPages("Deus")
+	pages, err := deus.db.GetCrawledPages("Deus")
+	if utils.HandleErr(err, "Failed to index for Deus") {
+		return
+	}
 
 	if len(pages) == 0 {
 		log.Println("[+] No pages to index for Deus!")
@@ -86,7 +96,8 @@ func (deus *Deus) Index(wg *sync.WaitGroup) {
 		productNameEl := parsedPage.Find("span", "itemprop", "name")
 
 		if productNameEl.Error != nil {
-			deus.db.DeleteCrawledPage(page.URL)
+			err := deus.db.DeleteCrawledPage(page.URL)
+			utils.HandleErr(err, "Failed to delete Deus crawled page")
 			continue
 		}
 
@@ -116,8 +127,13 @@ func (deus *Deus) Index(wg *sync.WaitGroup) {
 			Images:      []string{productImage},
 		}
 
-		deus.db.IndexProduct(productData)
-		deus.db.MovePageToIndexed(page)
+		err = deus.db.IndexProduct(productData)
+		if utils.HandleErr(err, "Couldn't index Deus product") {
+			return
+		}
+
+		err = deus.db.MovePageToIndexed(page)
+		utils.HandleErr(err, "Couldn't move Deus page to Indexed")
 
 	}
 
@@ -152,4 +168,3 @@ func (deus *Deus) Sniff(wg *sync.WaitGroup) {
 }
 
 func (d *Deus) String() string { return "Deus" }
-

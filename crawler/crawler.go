@@ -1,6 +1,7 @@
 package crawler
 
 import (
+	"fmt"
 	"log"
 	"sync"
 	"time"
@@ -32,7 +33,10 @@ func NewCrawler(database *database.Database) *Crawler {
 // and deletes the URL from the queue. Once all URLs have been crawled, it waits for 30 seconds
 // before calling itself recursively to continue the crawling process.
 func (cr *Crawler) Crawl(source string) {
-	queue := cr.db.GetQueue(source)
+	queue, err := cr.db.GetQueue(source)
+	if utils.HandleErr(err, "Failed to get pages for crawler") {
+		return
+	}
 
 	if len(queue) == 0 {
 		log.Println("[+] Queue is empty!")
@@ -45,6 +49,7 @@ func (cr *Crawler) Crawl(source string) {
 
 		wg.Add(1)
 		go func(url data.UrlQueue) {
+			defer wg.Done()
 
 			log.Println("[+] Crawling: ", url.URL)
 
@@ -58,18 +63,23 @@ func (cr *Crawler) Crawl(source string) {
 
 			doc := soup.HTMLParse(resp)
 
-			cr.db.SaveHTML(data.CrawledPage{
+			err := cr.db.SaveHTML(data.CrawledPage{
 				URL:    url.URL,
 				HTML:   doc.HTML(),
 				Source: url.Source,
 			})
 
-			cr.db.DeleteFromQueue(url)
+			if utils.HandleErr(err, fmt.Sprintf("Failed to save HTML: %v", url)) {
+				return
+			}
+
+			err = cr.db.DeleteFromQueue(url)
+
+			if utils.HandleErr(err, fmt.Sprintf("Failed to delete from crawler queue: %v", url)) {
+				return
+			}
 
 			log.Println("[+] Crawled: ", url.URL)
-
-			wg.Done()
-
 		}(url)
 	}
 
