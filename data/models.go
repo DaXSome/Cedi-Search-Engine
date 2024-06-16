@@ -13,15 +13,15 @@ type CrawledPage struct {
 }
 
 type Product struct {
-	ProductID   string   `bson:"_id"`
-	Slug        string   `bson:"slug"`
-	Name        string   `bson:"name"`
-	Price       float64  `bson:"price"`
-	Rating      float64  `bson:"rating"`
-	Description string   `bson:"description"`
-	URL         string   `bson:"url"`
-	Source      string   `bson:"source"`
-	Images      []string `bson:"images"`
+	ProductID   string   `bson:"_id" json:"objectID"`
+	Slug        string   `bson:"slug" json:"slug"`
+	Name        string   `bson:"name" json:"name"`
+	Price       float64  `bson:"price" json:"price"`
+	Rating      float64  `bson:"rating" json:"rating"`
+	Description string   `bson:"description" json:"description"`
+	URL         string   `bson:"url" json:"url"`
+	Source      string   `bson:"source" json:"source"`
+	Images      []string `bson:"images" json:"images"`
 }
 
 type AlgoliaData struct {

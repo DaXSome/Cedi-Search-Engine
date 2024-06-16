@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/Cedi-Search/Cedi-Search-Engine/data"
+	"github.com/algolia/algoliasearch-client-go/v3/algolia/search"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -15,6 +16,7 @@ import (
 
 type Database struct {
 	*mongo.Database
+	AlgoliaIndex *search.Index
 }
 
 // NewDatabase initializes a new instance of the Database struct.
@@ -30,10 +32,15 @@ func NewDatabase() *Database {
 		log.Fatalln(err)
 	}
 
+	algoliaClient := search.NewClient(os.Getenv("ALGOLIA_APP_ID"), os.Getenv("ALGOLIA_API_KEY"))
+
+	algoliaIndex := algoliaClient.InitIndex("products")
+
 	log.Println("[+] Database initialized!")
 
 	return &Database{
-		client.Database("cedi_search"),
+		AlgoliaIndex: algoliaIndex,
+		Database:     client.Database("cedi_search"),
 	}
 }
 
@@ -167,6 +174,13 @@ func (db *Database) IndexProduct(product data.Product) {
 	if err != nil {
 		log.Fatalln(err)
 	}
+
+	res, err := db.AlgoliaIndex.SaveObject(product)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	res.Wait()
 
 	log.Println("[+] Product Saved!")
 }
