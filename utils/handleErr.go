@@ -10,14 +10,15 @@ import (
 // Print error to screen and write to error log file
 func HandleErr(err error, logStmt string) bool {
 	if err != nil {
-		log.Printf("[!] %v", logStmt)
+		fullLog := fmt.Sprintf("[!] %v: %v => %v\n", time.Now(), logStmt, err)
+		log.Printf(fullLog)
 
 		logFile, err := os.OpenFile("errors.log", os.O_RDWR, 0666)
 		if err != nil {
 			log.Fatalf("[!!] Couldn't open log file: %v", err)
 		}
 
-		logFile.WriteString(fmt.Sprintf("[!] %v: %v => %v\n", time.Now(), logStmt, err))
+		logFile.WriteString(fullLog)
 
 	}
 
