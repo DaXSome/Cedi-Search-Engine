@@ -110,7 +110,13 @@ func (deus *Deus) Index(wg *sync.WaitGroup) {
 			log.Fatalln(err)
 		}
 
-		productDescription := parsedPage.Find("div", "class", "description").FullText()
+		productDescription := ""
+
+		productDescriptionEl := parsedPage.Find("div", "class", "description")
+
+		if productDescriptionEl.Error == nil {
+			productDescription = productDescriptionEl.FullText()
+		}
 
 		productID := uuid.New()
 
