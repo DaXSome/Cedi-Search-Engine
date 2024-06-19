@@ -2,7 +2,6 @@ package crawler
 
 import (
 	"fmt"
-	"log"
 	"sync"
 	"time"
 
@@ -39,7 +38,7 @@ func (cr *Crawler) Crawl(source string) {
 	}
 
 	if len(queue) == 0 {
-		log.Println("[+] Queue is empty!")
+		utils.Logger("crawler", "[+] Queue is empty!")
 		return
 	}
 
@@ -51,7 +50,7 @@ func (cr *Crawler) Crawl(source string) {
 		go func(url data.UrlQueue) {
 			defer wg.Done()
 
-			log.Println("[+] Crawling: ", url.URL)
+			utils.Logger("crawler", "[+] Crawling: ", url.URL)
 
 			var resp string
 
@@ -79,13 +78,13 @@ func (cr *Crawler) Crawl(source string) {
 				return
 			}
 
-			log.Println("[+] Crawled: ", url.URL)
+			utils.Logger("crawler", "[+] Crawled: ", url.URL)
 		}(url)
 	}
 
 	wg.Wait()
 
-	log.Println("[+] Wait 30s to continue crawling")
+	utils.Logger("crawler", "[+] Wait 30s to continue crawling")
 	time.Sleep(30 * time.Second)
 
 	cr.Crawl(source)

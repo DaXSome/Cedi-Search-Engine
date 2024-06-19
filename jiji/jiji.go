@@ -2,7 +2,6 @@ package jiji
 
 import (
 	"fmt"
-	"log"
 	"math/rand"
 	"strconv"
 	"strings"
@@ -58,7 +57,7 @@ func queueProducts(db *database.Database, products []soup.Root) {
 
 			utils.HandleErr(err, "Failed to add Jiji url to queue")
 		} else {
-			log.Println("[+] Skipping", productLink)
+			utils.Logger("sniffing", "[+] Skipping", productLink)
 		}
 
 	}
@@ -73,7 +72,7 @@ func queueProducts(db *database.Database, products []soup.Root) {
 // soup.Root contains the extracted products. The integer represents the total
 // number of pages of products.
 func extractProducts(href string) []soup.Root {
-	log.Println("[+] Extracting products from", href)
+	utils.Logger("sniffer", "[+] Extracting products from ", href)
 
 	resp := utils.FetchPage(href, "rod")
 
@@ -83,7 +82,7 @@ func extractProducts(href string) []soup.Root {
 }
 
 func (jiji *Jiji) Index(wg *sync.WaitGroup) {
-	log.Println("[+] Indexing Jiji...")
+	utils.Logger("indexer", "[+] Indexing Jiji...")
 
 	pages, err := jiji.db.GetCrawledPages("Jiji")
 	if utils.HandleErr(err, "Failed to get Jiji crawled pages") {
@@ -91,8 +90,8 @@ func (jiji *Jiji) Index(wg *sync.WaitGroup) {
 	}
 
 	if len(pages) == 0 {
-		log.Println("[+] No pages to index for Jiji!")
-		log.Println("[+] Waiting 60s to continue indexing...")
+		utils.Logger("indexer", "[+] No pages to index for Jiji!")
+		utils.Logger("indexer", "[+] Waiting 60s to continue indexing...")
 
 		time.Sleep(60 * time.Second)
 
@@ -184,7 +183,7 @@ func (jiji *Jiji) Index(wg *sync.WaitGroup) {
 }
 
 func (jiji *Jiji) Sniff(wg *sync.WaitGroup) {
-	log.Println("[+] Sniffing...")
+	utils.Logger("sniffer", "[+] Sniffing...")
 
 	defer wg.Done()
 
@@ -222,7 +221,7 @@ func (jiji *Jiji) Sniff(wg *sync.WaitGroup) {
 			queueProducts(jiji.db, pageProducts)
 
 			if i%50 == 0 {
-				log.Println("[+] Wait 120s to continue sniff")
+				utils.Logger("sniffing", "[+] Wait 120s to continue sniff")
 				time.Sleep(120 * time.Second)
 			}
 

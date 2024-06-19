@@ -1,7 +1,6 @@
 package deus
 
 import (
-	"log"
 	"strconv"
 	"sync"
 	"time"
@@ -40,7 +39,7 @@ func queueProducts(db *database.Database, products []soup.Root) {
 
 			utils.HandleErr(err, "Failed to queue Deus product")
 		} else {
-			log.Println("[+] Skipping", productLink)
+			utils.Logger("sniffer", "[+] Skipping", productLink)
 		}
 
 	}
@@ -55,7 +54,7 @@ func queueProducts(db *database.Database, products []soup.Root) {
 // soup.Root contains the extracted products. The integer represents the total
 // number of pages of products.
 func extractProducts(href string) []soup.Root {
-	log.Println("[+] Extracting products from", href)
+	utils.Logger("sniffer", "[+] Extracting products from ", href)
 
 	resp := utils.FetchPage(href, "rod")
 
@@ -71,7 +70,7 @@ func NewDeus(db *database.Database) *Deus {
 }
 
 func (deus *Deus) Index(wg *sync.WaitGroup) {
-	log.Println("[+] Indexing Deus...")
+	utils.Logger("indexer", "[+] Indexing Deus...")
 
 	pages, err := deus.db.GetCrawledPages("Deus")
 	if utils.HandleErr(err, "Failed to index for Deus") {
@@ -79,8 +78,8 @@ func (deus *Deus) Index(wg *sync.WaitGroup) {
 	}
 
 	if len(pages) == 0 {
-		log.Println("[+] No pages to index for Deus!")
-		log.Println("[+] Waiting 60s to continue indexing...")
+		utils.Logger("indexer", "[+] No pages to index for Deus!")
+		utils.Logger("indexer", "[+] Waiting 60s to continue indexing...")
 
 		time.Sleep(60 * time.Second)
 
@@ -106,8 +105,8 @@ func (deus *Deus) Index(wg *sync.WaitGroup) {
 		productPriceStirng := parsedPage.Find("span", "data-price-type", "finalPrice").Attrs()["data-price-amount"]
 
 		price, err := strconv.ParseFloat(productPriceStirng, 64)
-		if err != nil {
-			log.Fatalln(err)
+		if utils.HandleErr(err, "Failed to converted Deus product price") {
+			return
 		}
 
 		productDescription := ""
@@ -147,7 +146,7 @@ func (deus *Deus) Index(wg *sync.WaitGroup) {
 }
 
 func (deus *Deus) Sniff(wg *sync.WaitGroup) {
-	log.Println("[+] Sniffing...")
+	utils.Logger("sniffer", "[+] Sniffing...")
 
 	defer wg.Done()
 
@@ -167,7 +166,7 @@ func (deus *Deus) Sniff(wg *sync.WaitGroup) {
 
 		queueProducts(deus.db, products)
 
-		log.Println("[+] Wait 30s to continue sniff")
+		utils.Logger("sniffer", "[+] Wait 30s to continue sniff")
 		time.Sleep(30 * time.Second)
 
 	}

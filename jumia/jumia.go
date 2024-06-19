@@ -2,7 +2,6 @@ package jumia
 
 import (
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 	"sync"
@@ -41,7 +40,7 @@ func queueProducts(db *database.Database, products []soup.Root) {
 
 			utils.HandleErr(err, "Failed to add Jumia to queue")
 		} else {
-			log.Println("[+] Skipping", productLink)
+			utils.Logger("sniffer", "[+] Skipping", productLink)
 		}
 
 	}
@@ -56,7 +55,7 @@ func queueProducts(db *database.Database, products []soup.Root) {
 // soup.Root contains the extracted products. The integer represents the total
 // number of pages of products.
 func extractProducts(href string) ([]soup.Root, int) {
-	log.Println("[+] Extracting products from", href)
+	utils.Logger("sniffer", "[+] Extracting products from ", href)
 
 	resp := utils.FetchPage(href, "rod")
 
@@ -74,9 +73,10 @@ func extractProducts(href string) ([]soup.Root, int) {
 		var err error
 		if len(eqSignSplit) > 1 {
 			totalPages, err = strconv.Atoi(strings.Split(eqSignSplit[1], "#")[0])
-			if err != nil {
-				log.Println(err)
+			if utils.HandleErr(err, "Failed to handle Jumia pagination") {
+				return []soup.Root{}, 0
 			}
+
 		}
 	}
 
@@ -90,7 +90,7 @@ func NewJumia(db *database.Database) *Jumia {
 }
 
 func (jumia *Jumia) Index(wg *sync.WaitGroup) {
-	log.Println("[+] Indexing Jumia...")
+	utils.Logger("indexer", "[+] Indexing Jumia...")
 
 	pages, err := jumia.db.GetCrawledPages("Jumia")
 	if utils.HandleErr(err, "Failed to get crawled pages for Jumia") {
@@ -98,8 +98,8 @@ func (jumia *Jumia) Index(wg *sync.WaitGroup) {
 	}
 
 	if len(pages) == 0 {
-		log.Println("[+] No pages to index for Jumia!")
-		log.Println("[+] Waiting 60s to continue indexing...")
+		utils.Logger("indexer", "[+] No pages to index for Jumia!")
+		utils.Logger("indexer", "[+] Waiting 60s to continue indexing...")
 
 		time.Sleep(60 * time.Second)
 
@@ -137,8 +137,8 @@ func (jumia *Jumia) Index(wg *sync.WaitGroup) {
 		priceParts := strings.Split(productPriceStirng, " ")[1]
 
 		price, err := strconv.ParseFloat(strings.ReplaceAll(priceParts, ",", ""), 64)
-		if err != nil {
-			log.Fatalln(err)
+		if utils.HandleErr(err, "Failed to parse Jumia product price") {
+			return
 		}
 
 		productRatingText := parsedPage.Find("div", "class", "stars").Text()
@@ -146,8 +146,8 @@ func (jumia *Jumia) Index(wg *sync.WaitGroup) {
 		productRatingString := strings.Split(productRatingText, " ")[0]
 
 		rating, err := strconv.ParseFloat(productRatingString, 64)
-		if err != nil {
-			log.Fatalln(err)
+		if utils.HandleErr(err, "Failed to parse Jumia product rating") {
+			return
 		}
 
 		productDescriptionEl := parsedPage.Find("div", "class", "-mhm")
@@ -200,7 +200,7 @@ func (jumia *Jumia) Index(wg *sync.WaitGroup) {
 }
 
 func (jumia *Jumia) Sniff(wg *sync.WaitGroup) {
-	log.Println("[+] Sniffing...")
+	utils.Logger("sniffer", "[+] Sniffing...")
 
 	defer wg.Done()
 
@@ -236,7 +236,7 @@ func (jumia *Jumia) Sniff(wg *sync.WaitGroup) {
 				}(i)
 			}
 
-			log.Println("[+] Wait 120s to continue sniff")
+			utils.Logger("sniffer", "[+] Wait 120s to continue sniff")
 			time.Sleep(120 * time.Second)
 
 		}

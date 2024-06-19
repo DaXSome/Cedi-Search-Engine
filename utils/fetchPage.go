@@ -9,15 +9,14 @@ import (
 )
 
 var browser = rod.New().MustConnect().WithPanic(func(i interface{}) {
-	log.Println("[!] Headerless browser proberly lost context.")
+	Logger("default", "[!] Headerless browser proberly lost context.")
 })
 
 // FetchPage fetches the content of a web page given its URL.
 //
 // href: The URL of the web page to fetch.
 func FetchPage(href, fetcher string) string {
-
-	log.Printf("[+] Fetching %s using %s", href, fetcher)
+	Logger("default", "[+] Fetching ", href, " using ", fetcher)
 
 	var html string
 
@@ -39,7 +38,6 @@ func FetchPage(href, fetcher string) string {
 		var err error
 
 		html, err = soup.Get(href)
-
 		if err != nil {
 			log.Fatalln(err)
 		}

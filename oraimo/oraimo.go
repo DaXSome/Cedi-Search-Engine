@@ -1,7 +1,6 @@
 package oraimo
 
 import (
-	"log"
 	"strconv"
 	"strings"
 	"sync"
@@ -47,7 +46,7 @@ func queueProducts(db *database.Database, products []soup.Root) {
 
 			utils.HandleErr(err, "Failed to add Oraimo to queue")
 		} else {
-			log.Println("[+] Skipping", productLink)
+			utils.Logger("sniffer", "[+] Skipping", productLink)
 		}
 
 	}
@@ -62,7 +61,7 @@ func queueProducts(db *database.Database, products []soup.Root) {
 // soup.Root contains the extracted products. The integer represents the total
 // number of pages of products.
 func extractProducts(href string) []soup.Root {
-	log.Println("[+] Extracting products from", href)
+	utils.Logger("sniffer", "[+] Extracting products from ", href)
 
 	resp := utils.FetchPage(href, "rod")
 
@@ -72,7 +71,7 @@ func extractProducts(href string) []soup.Root {
 }
 
 func (oraimo *Oraimo) Index(wg *sync.WaitGroup) {
-	log.Println("[+] Indexing Oraimo...")
+	utils.Logger("indexer", "[+] Indexing Oraimo...")
 
 	pages, err := oraimo.db.GetCrawledPages("Oraimo")
 	if utils.HandleErr(err, "Failed to get Oraimo crawled pages") {
@@ -80,8 +79,8 @@ func (oraimo *Oraimo) Index(wg *sync.WaitGroup) {
 	}
 
 	if len(pages) == 0 {
-		log.Println("[+] No pages to index for Oraimo!")
-		log.Println("[+] Waiting 60s to continue indexing...")
+		utils.Logger("indexer", "[+] No pages to index for Oraimo!")
+		utils.Logger("indexer", "[+] Waiting 60s to continue indexing...")
 
 		time.Sleep(60 * time.Second)
 
@@ -115,8 +114,8 @@ func (oraimo *Oraimo) Index(wg *sync.WaitGroup) {
 			productRatingText := ratingEl.Attrs()["title"]
 
 			rating, err = strconv.ParseFloat(productRatingText, 64)
-			if err != nil {
-				log.Fatalln(err)
+			if utils.HandleErr(err, "Failed to convert Oraimo product price") {
+				return
 			}
 		}
 
@@ -156,7 +155,7 @@ func (oraimo *Oraimo) Index(wg *sync.WaitGroup) {
 }
 
 func (oraimo *Oraimo) Sniff(wg *sync.WaitGroup) {
-	log.Println("[+] Sniffing...")
+	utils.Logger("sniffer", "[+] Sniffing...")
 
 	defer wg.Done()
 
@@ -178,7 +177,7 @@ func (oraimo *Oraimo) Sniff(wg *sync.WaitGroup) {
 
 			queueProducts(oraimo.db, products)
 
-			log.Println("[+] Wait 15s to continue sniff")
+			utils.Logger("sniffer", "[+] Wait 15s to continue sniff")
 			time.Sleep(15 * time.Second)
 		}
 

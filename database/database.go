@@ -2,12 +2,12 @@ package database
 
 import (
 	"context"
-	"log"
 	netURL "net/url"
 	"os"
 	"strings"
 
 	"github.com/Cedi-Search/Cedi-Search-Engine/data"
+	"github.com/Cedi-Search/Cedi-Search-Engine/utils"
 	"github.com/algolia/algoliasearch-client-go/v3/algolia/search"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -23,20 +23,20 @@ type Database struct {
 //
 // Returns a pointer to the newly created Database.
 func NewDatabase() *Database {
-	log.Println("[+] Initing database...")
+	utils.Logger("database", "[+] Initing database...")
 
 	dbURI := os.Getenv("DB_URI")
 
 	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(dbURI))
 	if err != nil {
-		log.Fatalln(err)
+		utils.Logger("error", err)
 	}
 
 	algoliaClient := search.NewClient(os.Getenv("ALGOLIA_APP_ID"), os.Getenv("ALGOLIA_API_KEY"))
 
 	algoliaIndex := algoliaClient.InitIndex("products")
 
-	log.Println("[+] Database initialized!")
+	utils.Logger("database", "[+] Database initialized!")
 
 	return &Database{
 		AlgoliaIndex: algoliaIndex,
@@ -48,7 +48,7 @@ func NewDatabase() *Database {
 // It randomly selects 10 URLs from the queue and returns
 // them as a slice of data.UrlQueue.
 func (db *Database) GetQueue(source string) ([]data.UrlQueue, error) {
-	log.Printf("[+] Getting queue for %s\n", source)
+	utils.Logger("database", "[+] Getting queue for ", source)
 
 	res, err := db.Collection("url_queues").Find(context.TODO(), bson.D{{Key: "source", Value: source}}, &options.FindOptions{Limit: options.Count().SetLimit(5).Limit})
 	if err != nil {
@@ -65,7 +65,7 @@ func (db *Database) GetQueue(source string) ([]data.UrlQueue, error) {
 //
 // It takes a parameter 'url' of type `data.UrlQueue` which represents the URL to be added.
 func (db *Database) AddToQueue(url data.UrlQueue) error {
-	log.Println("[+] Adding to queue...", url.URL)
+	utils.Logger("database", "[+] Adding to queue...", url.URL)
 
 	parsedURL, err := netURL.Parse(url.URL)
 	if err != nil {
@@ -79,7 +79,7 @@ func (db *Database) AddToQueue(url data.UrlQueue) error {
 		return err
 	}
 
-	log.Println("[+] Added to queue!")
+	utils.Logger("database", "[+] Added to queue!")
 
 	return nil
 }
@@ -89,14 +89,14 @@ func (db *Database) AddToQueue(url data.UrlQueue) error {
 // It takes a parameter `url` of type `data.UrlQueue`, which represents the URL to be deleted from the queue.
 // This function does not return any value.
 func (db *Database) DeleteFromQueue(url data.UrlQueue) error {
-	log.Println("[+] Deleting from queue...", url.URL)
+	utils.Logger("database", "[+] Deleting from queue...", url.URL)
 
 	_, err := db.Collection("url_queues").DeleteOne(context.TODO(), url)
 	if err != nil {
 		return err
 	}
 
-	log.Println("[+] Deleted from queue")
+	utils.Logger("database", "[+] Deleted from queue")
 
 	return nil
 }
@@ -105,14 +105,14 @@ func (db *Database) DeleteFromQueue(url data.UrlQueue) error {
 //
 // page: the crawled page to be saved.
 func (db *Database) SaveHTML(page data.CrawledPage) error {
-	log.Println("[+] Saving html...", page.URL)
+	utils.Logger("database", "[+] Saving html...", page.URL)
 
 	_, err := db.Collection("crawled_pages").InsertOne(context.TODO(), page)
 	if err != nil {
 		return err
 	}
 
-	log.Println("[+] Saved HTML!")
+	utils.Logger("database", "[+] Saved HTML!")
 
 	return nil
 }
@@ -148,7 +148,7 @@ func (db *Database) CanQueueUrl(url string) (bool, error) {
 // Returns:
 // - an array of data.CrawledPage representing the retrieved crawled pages.
 func (db *Database) GetCrawledPages(source string) ([]data.CrawledPage, error) {
-	log.Printf("[+] Getting crawled pages for %s...", source)
+	utils.Logger("database", "[+] Getting crawled pages for ", source)
 
 	res, err := db.Collection("crawled_pages").Find(context.TODO(), bson.D{{Key: "source", Value: source}}, &options.FindOptions{Limit: options.Count().SetLimit(5).Limit})
 	if err != nil {
@@ -158,7 +158,7 @@ func (db *Database) GetCrawledPages(source string) ([]data.CrawledPage, error) {
 	var pages []data.CrawledPage
 	res.All(context.TODO(), &pages)
 
-	log.Printf("[+] Crawled pages for %s retrieved!", source)
+	utils.Logger("database", "[+] Crawled pages for ", source, " retrieved!")
 
 	return pages, nil
 }
@@ -167,7 +167,7 @@ func (db *Database) GetCrawledPages(source string) ([]data.CrawledPage, error) {
 //
 // It takes a parameter `product` of type `data.Product`.
 func (db *Database) IndexProduct(product data.Product) error {
-	log.Println("[+] Saving product...", product.Name)
+	utils.Logger("database", "[+] Saving product...", product.Name)
 
 	parsedURL, err := netURL.Parse(product.URL)
 	if err != nil {
@@ -188,7 +188,7 @@ func (db *Database) IndexProduct(product data.Product) error {
 
 	res.Wait()
 
-	log.Println("[+] Product Saved!")
+	utils.Logger("database", "[+] Product Saved!")
 
 	return nil
 }
@@ -198,7 +198,7 @@ func (db *Database) IndexProduct(product data.Product) error {
 //
 // It takes a parameter of type `data.CrawledPage` which represents the page to be deleted.
 func (db *Database) MovePageToIndexed(page data.CrawledPage) error {
-	log.Println("[+] Moving from crawled pages...", page.URL)
+	utils.Logger("database", "[+] Moving from crawled pages...", page.URL)
 
 	_, err := db.Collection("indexed_pages").InsertOne(context.TODO(), page, &options.InsertOneOptions{})
 	if err != nil {
@@ -206,21 +206,21 @@ func (db *Database) MovePageToIndexed(page data.CrawledPage) error {
 	}
 
 	db.DeleteCrawledPage(page.URL)
-	log.Println("[+] Moved Crawled page!")
+	utils.Logger("[+] Moved Crawled page!")
 
 	return nil
 }
 
 // DeleteCrawledPage deletes a crawled page from the database.
 func (db *Database) DeleteCrawledPage(url string) error {
-	log.Println("[+] Deleting from crawled pages...", url)
+	utils.Logger("database", "[+] Deleting from crawled pages...", url)
 
 	_, err := db.Collection("crawled_pages").DeleteOne(context.TODO(), bson.D{{Key: "url", Value: url}})
 	if err != nil {
 		return err
 	}
 
-	log.Println("[+] Deleted Crawled page!")
+	utils.Logger("database", "[+] Deleted Crawled page!")
 
 	return nil
 }

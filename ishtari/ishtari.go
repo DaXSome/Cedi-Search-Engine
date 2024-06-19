@@ -2,7 +2,6 @@ package ishtari
 
 import (
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 	"sync"
@@ -49,7 +48,7 @@ func queueProducts(db *database.Database, products []soup.Root) {
 
 			utils.HandleErr(err, "Failed to add Ishtari to queue")
 		} else {
-			log.Println("[+] Skipping", productLink)
+			utils.Logger("sniffer", "[+] Skipping", productLink)
 		}
 
 	}
@@ -64,7 +63,7 @@ func queueProducts(db *database.Database, products []soup.Root) {
 // soup.Root contains the extracted products. The integer represents the total
 // number of pages of products.
 func extractProducts(href string) ([]soup.Root, int) {
-	log.Println("[+] Extracting products from", href)
+	utils.Logger("sniffer", "[+] Extracting products from ", href)
 
 	resp := utils.FetchPage(href, "rod")
 
@@ -80,8 +79,8 @@ func extractProducts(href string) ([]soup.Root, int) {
 		paginationChildren := paginationEl.Children()
 
 		totalPages, err = strconv.Atoi(paginationChildren[len(paginationChildren)-2].FullText())
-		if err != nil {
-			log.Fatalln(err)
+		if utils.HandleErr(err, "Failed to convert Ishtari product price") {
+			return []soup.Root{}, 0
 		}
 
 	}
@@ -90,7 +89,7 @@ func extractProducts(href string) ([]soup.Root, int) {
 }
 
 func (ishtari *Ishtari) Index(wg *sync.WaitGroup) {
-	log.Println("[+] Indexing Ishtari...")
+	utils.Logger("indexer", "[+] Indexing Ishtari...")
 
 	pages, err := ishtari.db.GetCrawledPages("Ishtari")
 	if utils.HandleErr(err, "Failed to get Ishtari crawled pages") {
@@ -98,8 +97,8 @@ func (ishtari *Ishtari) Index(wg *sync.WaitGroup) {
 	}
 
 	if len(pages) == 0 {
-		log.Println("[+] No pages to index for Ishtari!")
-		log.Println("[+] Waiting 60s to continue indexing...")
+		utils.Logger("indexer", "[+] No pages to index for Ishtari!")
+		utils.Logger("indexer", "[+] Waiting 60s to continue indexing...")
 
 		time.Sleep(60 * time.Second)
 
@@ -165,7 +164,7 @@ func (ishtari *Ishtari) Index(wg *sync.WaitGroup) {
 }
 
 func (ishtari *Ishtari) Sniff(wg *sync.WaitGroup) {
-	log.Println("[+] Sniffing...")
+	utils.Logger("sniffer", "[+] Sniffing...")
 
 	defer wg.Done()
 
@@ -198,7 +197,7 @@ func (ishtari *Ishtari) Sniff(wg *sync.WaitGroup) {
 			}(i)
 		}
 
-		log.Println("[+] Wait 120s to continue sniff")
+		utils.Logger("sniffer", "[+] Wait 120s to continue sniff")
 		time.Sleep(120 * time.Second)
 
 	}
