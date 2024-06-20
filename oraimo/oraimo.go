@@ -70,88 +70,64 @@ func extractProducts(href string) []soup.Root {
 	return doc.FindAll("a", "class", "product")
 }
 
-func (oraimo *Oraimo) Index(wg *sync.WaitGroup) {
+func (oraimo *Oraimo) Index(page data.CrawledPage) {
 	utils.Logger("indexer", "[+] Indexing Oraimo...")
 
-	pages, err := oraimo.db.GetCrawledPages("Oraimo")
-	if utils.HandleErr(err, "Failed to get Oraimo crawled pages") {
+	parsedPage := soup.HTMLParse(page.HTML)
+
+	productName := parsedPage.Find("h1").FullText()
+	productName = strings.ReplaceAll(productName, "\n", "")
+	productName = strings.Trim(productName, " ")
+
+	productPriceStirng := parsedPage.Find("span", "class", "price").Text()
+	productPriceStirng = strings.ReplaceAll(productPriceStirng, "₵", "")
+
+	price, err := strconv.ParseFloat(strings.ReplaceAll(productPriceStirng, ",", ""), 64)
+	if utils.HandleErr(err, "Failed to parse Oraimo product price") {
 		return
 	}
 
-	if len(pages) == 0 {
-		utils.Logger("indexer", "[+] No pages to index for Oraimo!")
-		utils.Logger("indexer", "[+] Waiting 60s to continue indexing...")
+	rating := 0.0
 
-		time.Sleep(60 * time.Second)
+	ratingEl := parsedPage.Find("div", "class", "rating-result")
 
-		oraimo.Index(wg)
+	if ratingEl.Error == nil {
 
-		wg.Done()
+		productRatingText := ratingEl.Attrs()["title"]
+
+		rating, err = strconv.ParseFloat(productRatingText, 64)
+		if utils.HandleErr(err, "Failed to convert Oraimo product price") {
+			return
+		}
+	}
+
+	productDescription := parsedPage.Find("div", "id", "description").FullText()
+
+	productID := uuid.New()
+
+	productImagesEl := parsedPage.FindAll("img", "class", "fotorama__img")
+
+	productImages := []string{}
+
+	for _, el := range productImagesEl {
+		productImages = append(productImages, el.Attrs()["src"])
+	}
+
+	productData := data.Product{
+		Name:        productName,
+		Price:       price,
+		Rating:      rating,
+		Description: productDescription,
+		URL:         page.URL,
+		Source:      page.Source,
+		ProductID:   productID.String(),
+		Images:      productImages,
+	}
+
+	err = oraimo.db.IndexProduct(productData)
+	if utils.HandleErr(err, "Failed to index Oraimo product") {
 		return
 	}
-
-	for _, page := range pages {
-		parsedPage := soup.HTMLParse(page.HTML)
-
-		productName := parsedPage.Find("h1").FullText()
-		productName = strings.ReplaceAll(productName, "\n", "")
-		productName = strings.Trim(productName, " ")
-
-		productPriceStirng := parsedPage.Find("span", "class", "price").Text()
-		productPriceStirng = strings.ReplaceAll(productPriceStirng, "₵", "")
-
-		price, err := strconv.ParseFloat(strings.ReplaceAll(productPriceStirng, ",", ""), 64)
-		if utils.HandleErr(err, "Failed to parse Oraimo product price") {
-			return
-		}
-
-		rating := 0.0
-
-		ratingEl := parsedPage.Find("div", "class", "rating-result")
-
-		if ratingEl.Error == nil {
-
-			productRatingText := ratingEl.Attrs()["title"]
-
-			rating, err = strconv.ParseFloat(productRatingText, 64)
-			if utils.HandleErr(err, "Failed to convert Oraimo product price") {
-				return
-			}
-		}
-
-		productDescription := parsedPage.Find("div", "id", "description").FullText()
-
-		productID := uuid.New()
-
-		productImagesEl := parsedPage.FindAll("img", "class", "fotorama__img")
-
-		productImages := []string{}
-
-		for _, el := range productImagesEl {
-			productImages = append(productImages, el.Attrs()["src"])
-		}
-
-		productData := data.Product{
-			Name:        productName,
-			Price:       price,
-			Rating:      rating,
-			Description: productDescription,
-			URL:         page.URL,
-			Source:      page.Source,
-			ProductID:   productID.String(),
-			Images:      productImages,
-		}
-
-		err = oraimo.db.IndexProduct(productData)
-		if utils.HandleErr(err, "Failed to index Oraimo product") {
-			return
-		}
-
-		err = oraimo.db.MovePageToIndexed(page)
-		utils.HandleErr(err, "Failed to move Oraimo page to indexed")
-	}
-
-	oraimo.Index(wg)
 }
 
 func (oraimo *Oraimo) Sniff(wg *sync.WaitGroup) {

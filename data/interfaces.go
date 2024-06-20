@@ -6,6 +6,6 @@ import (
 
 type Target interface {
 	Sniff(wg *sync.WaitGroup)
-	Index(wg *sync.WaitGroup)
+	Index(page CrawledPage)
 	String() string
 }

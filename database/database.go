@@ -101,22 +101,6 @@ func (db *Database) DeleteFromQueue(url data.UrlQueue) error {
 	return nil
 }
 
-// SaveHTML saves the HTML of a crawled page to the database.
-//
-// page: the crawled page to be saved.
-func (db *Database) SaveHTML(page data.CrawledPage) error {
-	utils.Logger("database", "[+] Saving html...", page.URL)
-
-	_, err := db.Collection("crawled_pages").InsertOne(context.TODO(), page)
-	if err != nil {
-		return err
-	}
-
-	utils.Logger("database", "[+] Saved HTML!")
-
-	return nil
-}
-
 // CanQueueUrl checks if a URL can be queued.
 //
 // Parameters:
@@ -131,11 +115,9 @@ func (db *Database) CanQueueUrl(url string) (bool, error) {
 	}
 
 	existsInQueue := db.Collection("url_queues").FindOne(context.TODO(), bson.D{{Key: "_id", Value: parsedURL.Path}}).Err() == nil
-	existsInCrawledPages := db.Collection("crawled_pages").FindOne(context.TODO(), bson.D{{Key: "_id", Value: parsedURL.Path}}) == nil
-	existsInIndexedPages := db.Collection("indexed_pages").FindOne(context.TODO(), bson.D{{Key: "_id", Value: parsedURL.Path}}) == nil
 	existsInIndexedProducts := db.Collection("indexed_products").FindOne(context.TODO(), bson.D{{Key: "_id", Value: parsedURL.Path}}) == nil
 
-	canQueue := !existsInQueue && !existsInCrawledPages && !existsInIndexedPages && !existsInIndexedProducts
+	canQueue := !existsInQueue && !existsInIndexedProducts
 
 	return canQueue, nil
 }
@@ -189,38 +171,6 @@ func (db *Database) IndexProduct(product data.Product) error {
 	res.Wait()
 
 	utils.Logger("database", "[+] Product Saved!")
-
-	return nil
-}
-
-// DeleteFromCrawledPages deletes a crawled page from the database.
-// And moves it to the indexed pages collection
-//
-// It takes a parameter of type `data.CrawledPage` which represents the page to be deleted.
-func (db *Database) MovePageToIndexed(page data.CrawledPage) error {
-	utils.Logger("database", "[+] Moving from crawled pages...", page.URL)
-
-	_, err := db.Collection("indexed_pages").InsertOne(context.TODO(), page, &options.InsertOneOptions{})
-	if err != nil {
-		return err
-	}
-
-	db.DeleteCrawledPage(page.URL)
-	utils.Logger("[+] Moved Crawled page!")
-
-	return nil
-}
-
-// DeleteCrawledPage deletes a crawled page from the database.
-func (db *Database) DeleteCrawledPage(url string) error {
-	utils.Logger("database", "[+] Deleting from crawled pages...", url)
-
-	_, err := db.Collection("crawled_pages").DeleteOne(context.TODO(), bson.D{{Key: "url", Value: url}})
-	if err != nil {
-		return err
-	}
-
-	utils.Logger("database", "[+] Deleted Crawled page!")
 
 	return nil
 }

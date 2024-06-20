@@ -89,114 +89,85 @@ func NewJumia(db *database.Database) *Jumia {
 	}
 }
 
-func (jumia *Jumia) Index(wg *sync.WaitGroup) {
+func (jumia *Jumia) Index(page data.CrawledPage) {
 	utils.Logger("indexer", "[+] Indexing Jumia...")
 
-	pages, err := jumia.db.GetCrawledPages("Jumia")
-	if utils.HandleErr(err, "Failed to get crawled pages for Jumia") {
+	parsedPage := soup.HTMLParse(page.HTML)
+
+	productNameEl := parsedPage.Find("h1")
+
+	if productNameEl.Error != nil {
 		return
 	}
 
-	if len(pages) == 0 {
-		utils.Logger("indexer", "[+] No pages to index for Jumia!")
-		utils.Logger("indexer", "[+] Waiting 60s to continue indexing...")
+	productName := productNameEl.Text()
 
-		time.Sleep(60 * time.Second)
+	productPriceStirngEl := parsedPage.Find("span", "class", "-prxs")
 
-		jumia.Index(wg)
+	productPriceStirng := ""
 
-		wg.Done()
+	if productPriceStirngEl.Error != nil {
 		return
 	}
 
-	for _, page := range pages {
-		parsedPage := soup.HTMLParse(page.HTML)
+	productPriceStirng = productPriceStirngEl.Text()
 
-		productNameEl := parsedPage.Find("h1")
+	priceParts := strings.Split(productPriceStirng, " ")[1]
 
-		if productNameEl.Error != nil {
-			err := jumia.db.DeleteCrawledPage(page.URL)
-			utils.HandleErr(err, "Failed to delete Jumia crawled page")
-			continue
-		}
-
-		productName := productNameEl.Text()
-
-		productPriceStirngEl := parsedPage.Find("span", "class", "-prxs")
-
-		productPriceStirng := ""
-
-		if productPriceStirngEl.Error != nil {
-			err := jumia.db.DeleteCrawledPage(page.URL)
-			utils.HandleErr(err, "Failed to delete Jumia crawled page")
-			continue
-		}
-
-		productPriceStirng = productPriceStirngEl.Text()
-
-		priceParts := strings.Split(productPriceStirng, " ")[1]
-
-		price, err := strconv.ParseFloat(strings.ReplaceAll(priceParts, ",", ""), 64)
-		if utils.HandleErr(err, "Failed to parse Jumia product price") {
-			return
-		}
-
-		productRatingText := parsedPage.Find("div", "class", "stars").Text()
-
-		productRatingString := strings.Split(productRatingText, " ")[0]
-
-		rating, err := strconv.ParseFloat(productRatingString, 64)
-		if utils.HandleErr(err, "Failed to parse Jumia product rating") {
-			return
-		}
-
-		productDescriptionEl := parsedPage.Find("div", "class", "-mhm")
-
-		productDescription := ""
-
-		if productDescriptionEl.Error == nil {
-			productDescription = productDescriptionEl.FullText()
-		}
-
-		productID := ""
-
-		productIDTextEl := parsedPage.Find("li", "class", "-pvxs")
-
-		if productIDTextEl.Error == nil {
-			productIDText := productIDTextEl.FullText()
-			productID = strings.Split(productIDText, " ")[1]
-		}
-
-		productImagesEl := parsedPage.FindAll("img", "class", "-fw")
-
-		productImages := []string{}
-
-		for _, el := range productImagesEl {
-			productImages = append(productImages, el.Attrs()["data-src"])
-		}
-
-		productData := data.Product{
-			Name:        productName,
-			Price:       price,
-			Rating:      rating,
-			Description: productDescription,
-			URL:         page.URL,
-			Source:      page.Source,
-			ProductID:   productID,
-			Images:      productImages,
-		}
-
-		err = jumia.db.IndexProduct(productData)
-		if utils.HandleErr(err, "Failed to index Jumia Product") {
-			return
-		}
-
-		err = jumia.db.MovePageToIndexed(page)
-		utils.HandleErr(err, "Failed to move Jumia page to indexed")
-
+	price, err := strconv.ParseFloat(strings.ReplaceAll(priceParts, ",", ""), 64)
+	if utils.HandleErr(err, "Failed to parse Jumia product price") {
+		return
 	}
 
-	jumia.Index(wg)
+	productRatingText := parsedPage.Find("div", "class", "stars").Text()
+
+	productRatingString := strings.Split(productRatingText, " ")[0]
+
+	rating, err := strconv.ParseFloat(productRatingString, 64)
+	if utils.HandleErr(err, "Failed to parse Jumia product rating") {
+		return
+	}
+
+	productDescriptionEl := parsedPage.Find("div", "class", "-mhm")
+
+	productDescription := ""
+
+	if productDescriptionEl.Error == nil {
+		productDescription = productDescriptionEl.FullText()
+	}
+
+	productID := ""
+
+	productIDTextEl := parsedPage.Find("li", "class", "-pvxs")
+
+	if productIDTextEl.Error == nil {
+		productIDText := productIDTextEl.FullText()
+		productID = strings.Split(productIDText, " ")[1]
+	}
+
+	productImagesEl := parsedPage.FindAll("img", "class", "-fw")
+
+	productImages := []string{}
+
+	for _, el := range productImagesEl {
+		productImages = append(productImages, el.Attrs()["data-src"])
+	}
+
+	productData := data.Product{
+		Name:        productName,
+		Price:       price,
+		Rating:      rating,
+		Description: productDescription,
+		URL:         page.URL,
+		Source:      page.Source,
+		ProductID:   productID,
+		Images:      productImages,
+	}
+
+	err = jumia.db.IndexProduct(productData)
+	if utils.HandleErr(err, "Failed to index Jumia Product") {
+		return
+	}
 }
 
 func (jumia *Jumia) Sniff(wg *sync.WaitGroup) {

@@ -39,9 +39,8 @@ func main() {
 
 	wg.Add(len(targets))
 	for _, target := range targets {
-		go target.Index(&wg)
 		go target.Sniff(&wg)
-		go crawler.Crawl(target.String())
+		go crawler.Crawl(target.String(), target.Index)
 	}
 
 	wg.Wait()

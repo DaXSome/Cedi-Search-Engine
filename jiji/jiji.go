@@ -81,105 +81,74 @@ func extractProducts(href string) []soup.Root {
 	return doc.FindAll("a", "class", "b-list-advert-base")
 }
 
-func (jiji *Jiji) Index(wg *sync.WaitGroup) {
+func (jiji *Jiji) Index(page data.CrawledPage) {
 	utils.Logger("indexer", "[+] Indexing Jiji...")
 
-	pages, err := jiji.db.GetCrawledPages("Jiji")
-	if utils.HandleErr(err, "Failed to get Jiji crawled pages") {
+	parsedPage := soup.HTMLParse(page.HTML)
+
+	// E.g Kia Sorento 2.5 D Automatic 2003 Red in Akuapim South - Cars, Gabriel Sokah | Jiji.com.gh
+	productNameEl := parsedPage.Find("title")
+
+	if productNameEl.Error != nil {
 		return
 	}
 
-	if len(pages) == 0 {
-		utils.Logger("indexer", "[+] No pages to index for Jiji!")
-		utils.Logger("indexer", "[+] Waiting 60s to continue indexing...")
+	productName := productNameEl.Text()
+	productName = strings.Split(productName, " in ")[0]
 
-		time.Sleep(60 * time.Second)
+	productPriceEl := parsedPage.Find("span", "itemprop", "price")
 
-		jiji.Index(wg)
-
-		wg.Done()
+	if productPriceEl.Error != nil {
 		return
 	}
 
-	for _, page := range pages {
-		parsedPage := soup.HTMLParse(page.HTML)
+	productPriceString := productPriceEl.Attrs()["content"]
 
-		// E.g Kia Sorento 2.5 D Automatic 2003 Red in Akuapim South - Cars, Gabriel Sokah | Jiji.com.gh
-		productNameEl := parsedPage.Find("title")
-
-		if productNameEl.Error != nil {
-			err := jiji.db.DeleteCrawledPage(page.URL)
-			utils.HandleErr(err, "Failed to delete Jiji crawled page")
-			continue
-		}
-
-		productName := productNameEl.Text()
-		productName = strings.Split(productName, " in ")[0]
-
-		productPriceEl := parsedPage.Find("span", "itemprop", "price")
-
-		if productPriceEl.Error != nil {
-			err := jiji.db.DeleteCrawledPage(page.URL)
-			utils.HandleErr(err, "Failed to delete Jiji crawled page")
-			continue
-		}
-
-		productPriceString := productPriceEl.Attrs()["content"]
-
-		if productPriceString == "" {
-			err := jiji.db.DeleteCrawledPage(page.URL)
-			utils.HandleErr(err, "Failed to delete Jiji crawled page")
-			continue
-		}
-
-		price, err := strconv.ParseFloat(productPriceString, 64)
-		if utils.HandleErr(err, "Failed to convert Jiji product price") {
-			return
-		}
-
-		productDescription := parsedPage.Find("span", "class", "qa-description-text").Text()
-
-		productIDParts := strings.Split(page.URL, "-")
-		productID := strings.ReplaceAll(productIDParts[len(productIDParts)-1], ".html", "")
-
-		productImagesEl := parsedPage.FindAll("img", "class", "qa-carousel-thumbnail__image")
-
-		productImages := []string{}
-
-		for _, el := range productImagesEl {
-			productImages = append(productImages, el.Attrs()["src"])
-		}
-
-		if len(productImages) == 0 {
-			imageEl := parsedPage.Find("img", "class", "b-slider-image")
-
-			if imageEl.Error == nil {
-				productImages = append(productImages, imageEl.Attrs()["src"])
-			}
-		}
-
-		productData := data.Product{
-			Name:        productName,
-			Price:       price,
-			Rating:      0,
-			Description: productDescription,
-			URL:         page.URL,
-			Source:      page.Source,
-			ProductID:   productID,
-			Images:      productImages,
-		}
-
-		err = jiji.db.IndexProduct(productData)
-		if utils.HandleErr(err, "Failed to index Jiji product") {
-			return
-		}
-
-		err = jiji.db.MovePageToIndexed(page)
-		utils.HandleErr(err, "Failed to move Jiji page to indexed")
-
+	if productPriceString == "" {
+		return
 	}
 
-	jiji.Index(wg)
+	price, err := strconv.ParseFloat(productPriceString, 64)
+	if utils.HandleErr(err, "Failed to convert Jiji product price") {
+		return
+	}
+
+	productDescription := parsedPage.Find("span", "class", "qa-description-text").Text()
+
+	productIDParts := strings.Split(page.URL, "-")
+	productID := strings.ReplaceAll(productIDParts[len(productIDParts)-1], ".html", "")
+
+	productImagesEl := parsedPage.FindAll("img", "class", "qa-carousel-thumbnail__image")
+
+	productImages := []string{}
+
+	for _, el := range productImagesEl {
+		productImages = append(productImages, el.Attrs()["src"])
+	}
+
+	if len(productImages) == 0 {
+		imageEl := parsedPage.Find("img", "class", "b-slider-image")
+
+		if imageEl.Error == nil {
+			productImages = append(productImages, imageEl.Attrs()["src"])
+		}
+	}
+
+	productData := data.Product{
+		Name:        productName,
+		Price:       price,
+		Rating:      0,
+		Description: productDescription,
+		URL:         page.URL,
+		Source:      page.Source,
+		ProductID:   productID,
+		Images:      productImages,
+	}
+
+	err = jiji.db.IndexProduct(productData)
+	if utils.HandleErr(err, "Failed to index Jiji product") {
+		return
+	}
 }
 
 func (jiji *Jiji) Sniff(wg *sync.WaitGroup) {

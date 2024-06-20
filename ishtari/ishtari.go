@@ -88,79 +88,53 @@ func extractProducts(href string) ([]soup.Root, int) {
 	return doc.FindAll("a", "class", "false"), totalPages
 }
 
-func (ishtari *Ishtari) Index(wg *sync.WaitGroup) {
+func (ishtari *Ishtari) Index(page data.CrawledPage) {
 	utils.Logger("indexer", "[+] Indexing Ishtari...")
 
-	pages, err := ishtari.db.GetCrawledPages("Ishtari")
-	if utils.HandleErr(err, "Failed to get Ishtari crawled pages") {
+	parsedPage := soup.HTMLParse(page.HTML)
+
+	productNameEl := parsedPage.Find("h1", "class", "text-d22")
+
+	if productNameEl.Error != nil {
 		return
 	}
 
-	if len(pages) == 0 {
-		utils.Logger("indexer", "[+] No pages to index for Ishtari!")
-		utils.Logger("indexer", "[+] Waiting 60s to continue indexing...")
+	productName := productNameEl.Text()
 
-		time.Sleep(60 * time.Second)
+	productPriceStirng := strings.ReplaceAll(parsedPage.Find("span", "class", "false").Text(), " GH¢", "")
 
-		ishtari.Index(wg)
-
-		wg.Done()
+	price, err := strconv.ParseFloat(strings.ReplaceAll(productPriceStirng, ",", ""), 64)
+	if utils.HandleErr(err, "Failed to parse Ishtari product price") {
 		return
 	}
 
-	for _, page := range pages {
-		parsedPage := soup.HTMLParse(page.HTML)
+	productDescription := parsedPage.Find("div", "class", "my-content").FullText()
 
-		productNameEl := parsedPage.Find("h1", "class", "text-d22")
+	productID := uuid.New()
 
-		if productNameEl.Error != nil {
-			err = ishtari.db.DeleteCrawledPage(page.URL)
-			utils.HandleErr(err, "Failed to delete Ishtari crawled page")
-			continue
-		}
+	productImagesEl := parsedPage.FindAll("img", "class", "border-dgreyZoom")
 
-		productName := productNameEl.Text()
+	productImages := []string{}
 
-		productPriceStirng := strings.ReplaceAll(parsedPage.Find("span", "class", "false").Text(), " GH¢", "")
-
-		price, err := strconv.ParseFloat(strings.ReplaceAll(productPriceStirng, ",", ""), 64)
-		if utils.HandleErr(err, "Failed to parse Ishtari product price") {
-			return
-		}
-
-		productDescription := parsedPage.Find("div", "class", "my-content").FullText()
-
-		productID := uuid.New()
-
-		productImagesEl := parsedPage.FindAll("img", "class", "border-dgreyZoom")
-
-		productImages := []string{}
-
-		for _, el := range productImagesEl {
-			productImages = append(productImages, el.Attrs()["src"])
-		}
-
-		productData := data.Product{
-			Name:        productName,
-			Price:       price,
-			Rating:      0,
-			Description: productDescription,
-			URL:         page.URL,
-			Source:      page.Source,
-			ProductID:   productID.String(),
-			Images:      productImages,
-		}
-
-		err = ishtari.db.IndexProduct(productData)
-		if utils.HandleErr(err, "Failed to index Ishtari product") {
-			return
-		}
-
-		err = ishtari.db.MovePageToIndexed(page)
-		utils.HandleErr(err, "Failed to move Ishtari page to indexed")
+	for _, el := range productImagesEl {
+		productImages = append(productImages, el.Attrs()["src"])
 	}
 
-	ishtari.Index(wg)
+	productData := data.Product{
+		Name:        productName,
+		Price:       price,
+		Rating:      0,
+		Description: productDescription,
+		URL:         page.URL,
+		Source:      page.Source,
+		ProductID:   productID.String(),
+		Images:      productImages,
+	}
+
+	err = ishtari.db.IndexProduct(productData)
+	if utils.HandleErr(err, "Failed to index Ishtari product") {
+		return
+	}
 }
 
 func (ishtari *Ishtari) Sniff(wg *sync.WaitGroup) {

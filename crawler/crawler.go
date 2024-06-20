@@ -31,7 +31,7 @@ func NewCrawler(database *database.Database) *Crawler {
 // For each URL, it fetches the page content, parses it, saves the HTML to the database,
 // and deletes the URL from the queue. Once all URLs have been crawled, it waits for 30 seconds
 // before calling itself recursively to continue the crawling process.
-func (cr *Crawler) Crawl(source string) {
+func (cr *Crawler) Crawl(source string, indexer func(page data.CrawledPage)) {
 	queue, err := cr.db.GetQueue(source)
 	if utils.HandleErr(err, "Failed to get pages for crawler") {
 		return
@@ -62,15 +62,13 @@ func (cr *Crawler) Crawl(source string) {
 
 			doc := soup.HTMLParse(resp)
 
-			err := cr.db.SaveHTML(data.CrawledPage{
+			page := data.CrawledPage{
 				URL:    url.URL,
 				HTML:   doc.HTML(),
 				Source: url.Source,
-			})
-
-			if utils.HandleErr(err, fmt.Sprintf("Failed to save HTML: %v", url)) {
-				return
 			}
+
+			indexer(page)
 
 			err = cr.db.DeleteFromQueue(url)
 
@@ -87,5 +85,5 @@ func (cr *Crawler) Crawl(source string) {
 	utils.Logger("crawler", "[+] Wait 30s to continue crawling")
 	time.Sleep(30 * time.Second)
 
-	cr.Crawl(source)
+	cr.Crawl(source, indexer)
 }
