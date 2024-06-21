@@ -38,7 +38,7 @@ func (cr *Crawler) Crawl(source string, indexer func(page data.CrawledPage)) {
 	}
 
 	if len(queue) == 0 {
-		utils.Logger("crawler", "[+] Queue is empty!")
+		utils.Logger("crawler", "[+] Queue is empty for ", source)
 		return
 	}
 

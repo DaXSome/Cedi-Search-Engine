@@ -2,7 +2,6 @@ package database
 
 import (
 	"context"
-	"log"
 	"math/rand"
 	netURL "net/url"
 	"os"
@@ -54,10 +53,13 @@ func (db *Database) GetQueue(source string) ([]data.UrlQueue, error) {
 
 	queueCol := db.Collection("url_queues")
 
-	queueCount, err := queueCol.CountDocuments(context.TODO(), bson.D{}, options.Count())
+	queueCount, err := queueCol.CountDocuments(context.TODO(), bson.D{{Key: "source", Value: source}}, options.Count())
 	if err != nil {
-		log.Fatalln("here")
 		return []data.UrlQueue{}, err
+	}
+
+	if queueCount == 0 {
+		return []data.UrlQueue{}, nil
 	}
 
 	skipN := rand.Intn(int(queueCount))
