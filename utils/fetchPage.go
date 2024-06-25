@@ -5,11 +5,14 @@ import (
 
 	"github.com/anaskhan96/soup"
 	"github.com/go-rod/rod"
+	"github.com/go-rod/rod/lib/launcher"
 	"github.com/go-rod/rod/lib/proto"
 )
 
-var browser = rod.New().MustConnect().WithPanic(func(i interface{}) {
-	Logger("default", "[!] Headerless browser proberly lost context.")
+var controlUrl = launcher.New().Headless(false).MustLaunch()
+
+var browser = rod.New().ControlURL(controlUrl).MustConnect().WithPanic(func(i interface{}) {
+	log.Println("[!] Headerless browser probably lost context.")
 })
 
 // FetchPage fetches the content of a web page given its URL.
@@ -32,8 +35,9 @@ func FetchPage(href, fetcher string) string {
 
 		page.Navigate(href)
 
-		html = page.MustWaitStable().MustHTML()
+		page.MustWaitLoad()
 
+		html = page.MustHTML()
 	} else {
 		var err error
 
