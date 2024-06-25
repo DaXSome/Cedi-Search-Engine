@@ -2,7 +2,6 @@ package jiji
 
 import (
 	"fmt"
-	"log"
 	"math/rand"
 	"strconv"
 	"strings"
