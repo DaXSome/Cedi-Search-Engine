@@ -2,6 +2,7 @@ package jiji
 
 import (
 	"fmt"
+	"log"
 	"math/rand"
 	"strconv"
 	"strings"
@@ -96,7 +97,7 @@ func (jiji *Jiji) Index(page data.CrawledPage) {
 	productName := productNameEl.Text()
 	productName = strings.Split(productName, " in ")[0]
 
-	productPriceEl := parsedPage.Find("span", "itemprop", "price")
+	productPriceEl := parsedPage.Find("div", "itemprop", "price")
 
 	if productPriceEl.Error != nil {
 		return
