@@ -1,6 +1,7 @@
 package oraimo
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"sync"
@@ -29,24 +30,29 @@ func NewOraimo(db *database.Database) *Oraimo {
 // The function iterates over each 'link' in 'products' and generates a product link.
 // If the generated product link is eligible to be queued, it adds it to the database queue using 'db.AddToQueue'.
 func queueProducts(db *database.Database, products []soup.Root) {
-	for _, link := range products {
-		// E.g. https://gh.oraimo.com/oraimo-freepods-lite-40-hour-playtime-enc-true-wireless-earbuds.html
-		productLink := link.Attrs()["href"]
+	for _, product := range products {
 
-		canQueue, err := db.CanQueueUrl(productLink)
+		productMetaTag := product.Find("a", "class", "product-img")
+
+		// E.g./product/oraimo-boompop-2-powerful-deep-bass-dual-device-connectivity-wireless-headset?ean=4894947008030
+		productLink := productMetaTag.Attrs()["href"]
+
+		fmtedProductLink := fmt.Sprintf("https://gh.oraimo.com%s", strings.Split(productLink, "?")[0])
+
+		canQueue, err := db.CanQueueUrl(fmtedProductLink)
 		if utils.HandleErr(err, "Failed to get Oraimo queue") {
 			return
 		}
 
 		if canQueue {
 			err = db.AddToQueue(data.UrlQueue{
-				URL:    productLink,
+				URL:    fmtedProductLink,
 				Source: "Oraimo",
 			})
 
 			utils.HandleErr(err, "Failed to add Oraimo to queue")
 		} else {
-			utils.Logger("sniffer", "[+] Skipping", productLink)
+			utils.Logger("sniffer", "[+] Skipping", fmtedProductLink)
 		}
 
 	}
@@ -67,7 +73,7 @@ func extractProducts(href string) []soup.Root {
 
 	doc := soup.HTMLParse(resp)
 
-	return doc.FindAll("a", "class", "product")
+	return doc.FindAll("div", "class", "site-product")
 }
 
 func (oraimo *Oraimo) Index(page data.CrawledPage) {
@@ -135,28 +141,27 @@ func (oraimo *Oraimo) Sniff(wg *sync.WaitGroup) {
 
 	defer wg.Done()
 
-	resp := utils.FetchPage("https://gh.oraimo.com/", "rod")
-
-	doc := soup.HTMLParse(resp)
-
-	links := doc.FindAll("a", "role", "menuitem")
+	links := []string{
+		"https://gh.oraimo.com/oraimo-daily-deals.html",
+		"https://gh.oraimo.com/promotion/free-gifts",
+		"https://gh.oraimo.com/collections/audio",
+		"https://gh.oraimo.com/collections/power",
+		"https://gh.oraimo.com/collections/smart-and-office",
+		"https://gh.oraimo.com/collections/personal-care",
+		"https://gh.oraimo.com/collections/home-appliances",
+	}
 
 	utils.ShuffleLinks(links)
 
 	for _, link := range links {
 		// E.g. https://gh.oraimo.com/products/lifestyle/electric-toothbrush.html
-		categoryLink := link.Attrs()["href"]
 
-		if strings.Contains(categoryLink, "products") {
+		products := extractProducts(link)
 
-			products := extractProducts(categoryLink)
+		queueProducts(oraimo.db, products)
 
-			queueProducts(oraimo.db, products)
-
-			utils.Logger("sniffer", "[+] Wait 15s to continue sniff")
-			time.Sleep(15 * time.Second)
-		}
-
+		utils.Logger("sniffer", "[+] Wait 15s to continue sniff")
+		time.Sleep(15 * time.Second)
 	}
 }
 
