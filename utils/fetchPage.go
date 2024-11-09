@@ -3,6 +3,7 @@ package utils
 import (
 	"log"
 
+	"github.com/Cedi-Search/Cedi-Search-Engine/config"
 	"github.com/anaskhan96/soup"
 	"github.com/go-rod/rod"
 	"github.com/go-rod/rod/lib/launcher"
@@ -30,7 +31,7 @@ func FetchPage(href, fetcher string) string {
 		defer page.Close()
 
 		page.SetUserAgent(&proto.NetworkSetUserAgentOverride{
-			UserAgent: "cedisearchbot/0.1 (+https://cedi-search.vercel.app/about)",
+			UserAgent: config.USER_AGENT,
 		})
 
 		page.Navigate(href)

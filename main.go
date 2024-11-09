@@ -3,6 +3,7 @@ package main
 import (
 	"sync"
 
+	"github.com/Cedi-Search/Cedi-Search-Engine/config"
 	"github.com/Cedi-Search/Cedi-Search-Engine/crawler"
 	"github.com/Cedi-Search/Cedi-Search-Engine/data"
 	"github.com/Cedi-Search/Cedi-Search-Engine/database"
@@ -19,7 +20,7 @@ import (
 func main() {
 	utils.Logger("default", "[+] Startup")
 
-	soup.Header("User-Agent", "cedisearchbot/0.1 (+https://cedi-search.vercel.app/about)")
+	soup.Header("User-Agent",config.USER_AGENT)
 
 	wg := sync.WaitGroup{}
 
