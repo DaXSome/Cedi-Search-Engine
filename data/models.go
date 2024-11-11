@@ -24,6 +24,10 @@ type Product struct {
 	Images      []string `bson:"images" json:"images"`
 }
 
+type MetaData struct {
+	UpdatedAt string `bson:"updated_at"`
+}
+
 type AlgoliaData struct {
 	ObjectID string `json:"objectID"`
 	Product

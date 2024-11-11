@@ -2,10 +2,12 @@ package database
 
 import (
 	"context"
+	"log"
 	"math/rand"
 	netURL "net/url"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/Cedi-Search/Cedi-Search-Engine/data"
 	"github.com/Cedi-Search/Cedi-Search-Engine/utils"
@@ -191,6 +193,11 @@ func (db *Database) IndexProduct(product data.Product) error {
 	res.Wait()
 
 	utils.Logger("database", "[+] Product Saved!")
+
+	_, err = db.Collection("meta_data").UpdateOne(context.TODO(), bson.M{"_id": "updated_at"}, bson.M{"$set": data.MetaData{UpdatedAt: time.Now().Format(time.RFC3339)}})
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
