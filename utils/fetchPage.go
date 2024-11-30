@@ -10,7 +10,7 @@ import (
 	"github.com/go-rod/rod/lib/proto"
 )
 
-var controlUrl = launcher.New().Headless(false).MustLaunch()
+var controlUrl = launcher.New().Headless(true).MustLaunch()
 
 var browser = rod.New().ControlURL(controlUrl).MustConnect().WithPanic(func(i interface{}) {
 	log.Println("[!] Headerless browser probably lost context.")
