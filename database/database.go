@@ -2,7 +2,6 @@ package database
 
 import (
 	"context"
-	"log"
 	"math/rand"
 	netURL "net/url"
 	"os"
