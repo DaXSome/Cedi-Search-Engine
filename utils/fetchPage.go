@@ -20,7 +20,7 @@ var browser = rod.New().ControlURL(controlUrl).MustConnect().WithPanic(func(i in
 //
 // href: The URL of the web page to fetch.
 func FetchPage(href, fetcher string) string {
-	Logger("default", "[+] Fetching ", href, " using ", fetcher)
+	Logger(Utils, Utils, "Fetching ", href, " using ", fetcher)
 
 	var html string
 

@@ -13,6 +13,10 @@ import (
 	"github.com/anaskhan96/soup"
 )
 
+const (
+	source = "Deus"
+)
+
 type Deus struct {
 	db *database.Database
 }
@@ -39,7 +43,7 @@ func queueProducts(db *database.Database, products []soup.Root) {
 
 			utils.HandleErr(err, "Failed to queue Deus product")
 		} else {
-			utils.Logger("sniffer", "[+] Skipping", productLink)
+			utils.Logger(utils.Sniffer, source, "Skipping", productLink)
 		}
 
 	}
@@ -54,7 +58,7 @@ func queueProducts(db *database.Database, products []soup.Root) {
 // soup.Root contains the extracted products. The integer represents the total
 // number of pages of products.
 func extractProducts(href string) []soup.Root {
-	utils.Logger("sniffer", "[+] Extracting products from ", href)
+	utils.Logger(utils.Sniffer, "Extracting products from ", href)
 
 	resp := utils.FetchPage(href, "rod")
 
@@ -70,7 +74,7 @@ func NewDeus(db *database.Database) *Deus {
 }
 
 func (deus *Deus) Index(page data.CrawledPage) {
-	utils.Logger("indexer", "[+] Indexing Deus...")
+	utils.Logger(utils.Indexer, source, "Indexing Deus...")
 
 	parsedPage := soup.HTMLParse(page.HTML)
 
@@ -119,7 +123,7 @@ func (deus *Deus) Index(page data.CrawledPage) {
 }
 
 func (deus *Deus) Sniff(wg *sync.WaitGroup) {
-	utils.Logger("sniffer", "[+] Sniffing...")
+	utils.Logger(utils.Sniffer, source, "Sniffing...")
 
 	defer wg.Done()
 
@@ -139,10 +143,10 @@ func (deus *Deus) Sniff(wg *sync.WaitGroup) {
 
 		queueProducts(deus.db, products)
 
-		utils.Logger("sniffer", "[+] Wait 30s to continue sniff")
+		utils.Logger(utils.Sniffer, source, "Wait 30s to continue sniff")
 		time.Sleep(30 * time.Second)
 
 	}
 }
 
-func (d *Deus) String() string { return "Deus" }
+func (d *Deus) String() string { return source }

@@ -18,7 +18,7 @@ import (
 )
 
 func main() {
-	utils.Logger("default", "[+] Startup")
+	utils.Logger(utils.Default, utils.Default, "Startup")
 
 	soup.Header("User-Agent",config.USER_AGENT)
 

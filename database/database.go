@@ -25,20 +25,20 @@ type Database struct {
 //
 // Returns a pointer to the newly created Database.
 func NewDatabase() *Database {
-	utils.Logger("database", "[+] Initing database...")
+	utils.Logger(utils.Database, utils.Database, "Initing database...")
 
 	dbURI := os.Getenv("DB_URI")
 
 	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(dbURI))
 	if err != nil {
-		utils.Logger("error", err)
+		utils.Logger(utils.Error, utils.Database, err)
 	}
 
 	algoliaClient := search.NewClient(os.Getenv("ALGOLIA_APP_ID"), os.Getenv("ALGOLIA_API_KEY"))
 
 	algoliaIndex := algoliaClient.InitIndex("products")
 
-	utils.Logger("database", "[+] Database initialized!")
+	utils.Logger(utils.Database, utils.Database, "Database initialized!")
 
 	return &Database{
 		AlgoliaIndex: algoliaIndex,
@@ -50,7 +50,7 @@ func NewDatabase() *Database {
 // It randomly selects 10 URLs from the queue and returns
 // them as a slice of data.UrlQueue.
 func (db *Database) GetQueue(source string) ([]data.UrlQueue, error) {
-	utils.Logger("database", "[+] Getting queue for ", source)
+	utils.Logger(utils.Database, utils.Database, "Getting queue for ", source)
 
 	queueCol := db.Collection("url_queues")
 
@@ -86,7 +86,7 @@ func (db *Database) GetQueue(source string) ([]data.UrlQueue, error) {
 //
 // It takes a parameter 'url' of type `data.UrlQueue` which represents the URL to be added.
 func (db *Database) AddToQueue(url data.UrlQueue) error {
-	utils.Logger("database", "[+] Adding to queue...", url.URL)
+	utils.Logger(utils.Database, utils.Database, "Adding to queue...", url.URL)
 
 	parsedURL, err := netURL.Parse(url.URL)
 	if err != nil {
@@ -100,7 +100,7 @@ func (db *Database) AddToQueue(url data.UrlQueue) error {
 		return err
 	}
 
-	utils.Logger("database", "[+] Added to queue!")
+	utils.Logger(utils.Database, utils.Database, "Added to queue!")
 
 	return nil
 }
@@ -110,14 +110,14 @@ func (db *Database) AddToQueue(url data.UrlQueue) error {
 // It takes a parameter `url` of type `data.UrlQueue`, which represents the URL to be deleted from the queue.
 // This function does not return any value.
 func (db *Database) DeleteFromQueue(url data.UrlQueue) error {
-	utils.Logger("database", "[+] Deleting from queue...", url.URL)
+	utils.Logger(utils.Database, utils.Database, "Deleting from queue...", url.URL)
 
 	_, err := db.Collection("url_queues").DeleteOne(context.TODO(), url)
 	if err != nil {
 		return err
 	}
 
-	utils.Logger("database", "[+] Deleted from queue")
+	utils.Logger(utils.Database, utils.Database, "Deleted from queue")
 
 	return nil
 }
@@ -151,7 +151,7 @@ func (db *Database) CanQueueUrl(url string) (bool, error) {
 // Returns:
 // - an array of data.CrawledPage representing the retrieved crawled pages.
 func (db *Database) GetCrawledPages(source string) ([]data.CrawledPage, error) {
-	utils.Logger("database", "[+] Getting crawled pages for ", source)
+	utils.Logger(utils.Database, utils.Database, "Getting crawled pages for ", source)
 
 	res, err := db.Collection("crawled_pages").Find(context.TODO(), bson.D{{Key: "source", Value: source}}, &options.FindOptions{Limit: options.Count().SetLimit(5).Limit})
 	if err != nil {
@@ -161,7 +161,7 @@ func (db *Database) GetCrawledPages(source string) ([]data.CrawledPage, error) {
 	var pages []data.CrawledPage
 	res.All(context.TODO(), &pages)
 
-	utils.Logger("database", "[+] Crawled pages for ", source, " retrieved!")
+	utils.Logger(utils.Database, utils.Database, "Crawled pages for ", source, " retrieved!")
 
 	return pages, nil
 }
@@ -170,7 +170,7 @@ func (db *Database) GetCrawledPages(source string) ([]data.CrawledPage, error) {
 //
 // It takes a parameter `product` of type `data.Product`.
 func (db *Database) IndexProduct(product data.Product) error {
-	utils.Logger("database", "[+] Saving product...", product.Name)
+	utils.Logger(utils.Database, utils.Database, "Saving product...", product.Name)
 
 	parsedURL, err := netURL.Parse(product.URL)
 	if err != nil {
@@ -191,7 +191,7 @@ func (db *Database) IndexProduct(product data.Product) error {
 
 	res.Wait()
 
-	utils.Logger("database", "[+] Product Saved!")
+	utils.Logger(utils.Database, utils.Database, "Product Saved!")
 
 	_, err = db.Collection("meta_data").UpdateOne(context.TODO(), bson.M{"_id": "updated_at"}, bson.M{"$set": data.MetaData{UpdatedAt: time.Now().Format(time.RFC3339)}})
 	if err != nil {

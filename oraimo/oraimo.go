@@ -14,6 +14,10 @@ import (
 	"github.com/google/uuid"
 )
 
+const (
+	source = "Oraimo"
+)
+
 type Oraimo struct {
 	db *database.Database
 }
@@ -52,7 +56,7 @@ func queueProducts(db *database.Database, products []soup.Root) {
 
 			utils.HandleErr(err, "Failed to add Oraimo to queue")
 		} else {
-			utils.Logger("sniffer", "[+] Skipping", fmtedProductLink)
+			utils.Logger(utils.Sniffer, source, "Skipping", fmtedProductLink)
 		}
 
 	}
@@ -67,7 +71,7 @@ func queueProducts(db *database.Database, products []soup.Root) {
 // soup.Root contains the extracted products. The integer represents the total
 // number of pages of products.
 func extractProducts(href string) []soup.Root {
-	utils.Logger("sniffer", "[+] Extracting products from ", href)
+	utils.Logger(utils.Sniffer, source, "Extracting products from ", href)
 
 	resp := utils.FetchPage(href, "rod")
 
@@ -77,7 +81,7 @@ func extractProducts(href string) []soup.Root {
 }
 
 func (oraimo *Oraimo) Index(page data.CrawledPage) {
-	utils.Logger("indexer", "[+] Indexing Oraimo...")
+	utils.Logger(utils.Indexer, source, "Indexing Oraimo...")
 
 	parsedPage := soup.HTMLParse(page.HTML)
 
@@ -137,7 +141,7 @@ func (oraimo *Oraimo) Index(page data.CrawledPage) {
 }
 
 func (oraimo *Oraimo) Sniff(wg *sync.WaitGroup) {
-	utils.Logger("sniffer", "[+] Sniffing...")
+	utils.Logger(utils.Sniffer, source, "Sniffing...")
 
 	defer wg.Done()
 
@@ -160,9 +164,9 @@ func (oraimo *Oraimo) Sniff(wg *sync.WaitGroup) {
 
 		queueProducts(oraimo.db, products)
 
-		utils.Logger("sniffer", "[+] Wait 15s to continue sniff")
+		utils.Logger(utils.Sniffer, source, "Wait 15s to continue sniff")
 		time.Sleep(15 * time.Second)
 	}
 }
 
-func (oraimo *Oraimo) String() string { return "Oraimo" }
+func (oraimo *Oraimo) String() string { return source }

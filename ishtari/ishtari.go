@@ -14,6 +14,10 @@ import (
 	"github.com/google/uuid"
 )
 
+const (
+	source = "Ishtari"
+)
+
 type Ishtari struct {
 	db *database.Database
 }
@@ -48,7 +52,7 @@ func queueProducts(db *database.Database, products []soup.Root) {
 
 			utils.HandleErr(err, "Failed to add Ishtari to queue")
 		} else {
-			utils.Logger("sniffer", "[+] Skipping", productLink)
+			utils.Logger(utils.Sniffer, source, "Skipping", productLink)
 		}
 
 	}
@@ -63,7 +67,7 @@ func queueProducts(db *database.Database, products []soup.Root) {
 // soup.Root contains the extracted products. The integer represents the total
 // number of pages of products.
 func extractProducts(href string) ([]soup.Root, int) {
-	utils.Logger("sniffer", "[+] Extracting products from ", href)
+	utils.Logger(utils.Sniffer, source, "Extracting products from ", href)
 
 	resp := utils.FetchPage(href, "rod")
 
@@ -89,7 +93,7 @@ func extractProducts(href string) ([]soup.Root, int) {
 }
 
 func (ishtari *Ishtari) Index(page data.CrawledPage) {
-	utils.Logger("indexer", "[+] Indexing Ishtari...")
+	utils.Logger(utils.Indexer, source, "Indexing Ishtari...")
 
 	parsedPage := soup.HTMLParse(page.HTML)
 
@@ -138,7 +142,7 @@ func (ishtari *Ishtari) Index(page data.CrawledPage) {
 }
 
 func (ishtari *Ishtari) Sniff(wg *sync.WaitGroup) {
-	utils.Logger("sniffer", "[+] Sniffing...")
+	utils.Logger(utils.Sniffer, source, "Sniffing...")
 
 	defer wg.Done()
 
@@ -171,10 +175,10 @@ func (ishtari *Ishtari) Sniff(wg *sync.WaitGroup) {
 			}(i)
 		}
 
-		utils.Logger("sniffer", "[+] Wait 120s to continue sniff")
+		utils.Logger(utils.Sniffer, source, "Wait 120s to continue sniff")
 		time.Sleep(120 * time.Second)
 
 	}
 }
 
-func (ishtari *Ishtari) String() string { return "Ishtari" }
+func (ishtari *Ishtari) String() string { return source }

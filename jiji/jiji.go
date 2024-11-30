@@ -14,6 +14,10 @@ import (
 	"github.com/anaskhan96/soup"
 )
 
+const (
+	source = "Jiji"
+)
+
 type Jiji struct {
 	db *database.Database
 }
@@ -57,7 +61,7 @@ func queueProducts(db *database.Database, products []soup.Root) {
 
 			utils.HandleErr(err, "Failed to add Jiji url to queue")
 		} else {
-			utils.Logger("sniffing", "[+] Skipping", productLink)
+			utils.Logger(utils.Sniffer, source, "Skipping", productLink)
 		}
 
 	}
@@ -72,7 +76,7 @@ func queueProducts(db *database.Database, products []soup.Root) {
 // soup.Root contains the extracted products. The integer represents the total
 // number of pages of products.
 func extractProducts(href string) []soup.Root {
-	utils.Logger("sniffer", "[+] Extracting products from ", href)
+	utils.Logger(utils.Sniffer, source, "Extracting products from ", href)
 
 	resp := utils.FetchPage(href, "rod")
 
@@ -82,7 +86,7 @@ func extractProducts(href string) []soup.Root {
 }
 
 func (jiji *Jiji) Index(page data.CrawledPage) {
-	utils.Logger("indexer", "[+] Indexing Jiji...")
+	utils.Logger(utils.Indexer, source, "Indexing Jiji...")
 
 	parsedPage := soup.HTMLParse(page.HTML)
 
@@ -152,7 +156,7 @@ func (jiji *Jiji) Index(page data.CrawledPage) {
 }
 
 func (jiji *Jiji) Sniff(wg *sync.WaitGroup) {
-	utils.Logger("sniffer", "[+] Sniffing...")
+	utils.Logger(utils.Sniffer, source, "Sniffing...")
 
 	defer wg.Done()
 
@@ -190,7 +194,7 @@ func (jiji *Jiji) Sniff(wg *sync.WaitGroup) {
 			queueProducts(jiji.db, pageProducts)
 
 			if i%50 == 0 {
-				utils.Logger("sniffing", "[+] Wait 120s to continue sniff")
+				utils.Logger(utils.Sniffer, source, "Wait 120s to continue sniff")
 				time.Sleep(120 * time.Second)
 			}
 
@@ -199,4 +203,4 @@ func (jiji *Jiji) Sniff(wg *sync.WaitGroup) {
 	}
 }
 
-func (jiji *Jiji) String() string { return "Jiji" }
+func (jiji *Jiji) String() string { return source }

@@ -38,7 +38,7 @@ func (cr *Crawler) Crawl(source string, indexer func(page data.CrawledPage)) {
 	}
 
 	if len(queue) == 0 {
-		utils.Logger("crawler", "[+] Queue is empty for ", source)
+		utils.Logger(utils.Crawler, utils.Crawler, "Queue is empty for ", source)
 		return
 	}
 
@@ -50,7 +50,7 @@ func (cr *Crawler) Crawl(source string, indexer func(page data.CrawledPage)) {
 		go func(url data.UrlQueue) {
 			defer wg.Done()
 
-			utils.Logger("crawler", "[+] Crawling: ", url.URL)
+			utils.Logger(utils.Crawler, utils.Crawler, "Crawling: ", url.URL)
 
 			var resp string
 
@@ -76,13 +76,13 @@ func (cr *Crawler) Crawl(source string, indexer func(page data.CrawledPage)) {
 				return
 			}
 
-			utils.Logger("crawler", "[+] Crawled: ", url.URL)
+			utils.Logger(utils.Crawler, utils.Crawler, "Crawled: ", url.URL)
 		}(url)
 	}
 
 	wg.Wait()
 
-	utils.Logger("crawler", "[+] Wait 30s to continue crawling")
+	utils.Logger(utils.Crawler, utils.Crawler, "Wait 30s to continue crawling")
 	time.Sleep(30 * time.Second)
 
 	cr.Crawl(source, indexer)
