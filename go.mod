@@ -1,6 +1,6 @@
 module github.com/Cedi-Search/Cedi-Search-Engine
 
-go 1.20
+go 1.22.3
 
 require (
 	github.com/anaskhan96/soup v1.2.5
@@ -12,6 +12,7 @@ require (
 
 require (
 	github.com/algolia/algoliasearch-client-go/v3 v3.31.1 // indirect
+	github.com/daxsome/daxsome-commons v0.0.0-20241218074128-be0bac6ee980 // indirect
 	github.com/fatih/color v1.17.0 // indirect
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/gookit/color v1.5.4 // indirect
