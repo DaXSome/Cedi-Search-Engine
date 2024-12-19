@@ -119,8 +119,6 @@ func (jiji *Jiji) Index(page data.CrawledPage) {
 
 	productDescription := parsedPage.Find("span", "class", "qa-description-text").Text()
 
-	productIDParts := strings.Split(page.URL, "-")
-	productID := strings.ReplaceAll(productIDParts[len(productIDParts)-1], ".html", "")
 
 	productImagesEl := parsedPage.FindAll("img", "class", "qa-carousel-thumbnail__image")
 
@@ -145,7 +143,6 @@ func (jiji *Jiji) Index(page data.CrawledPage) {
 		Description: productDescription,
 		URL:         page.URL,
 		Source:      page.Source,
-		ProductID:   productID,
 		Images:      productImages,
 	}
 

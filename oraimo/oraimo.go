@@ -11,7 +11,6 @@ import (
 	"github.com/Cedi-Search/Cedi-Search-Engine/database"
 	"github.com/Cedi-Search/Cedi-Search-Engine/utils"
 	"github.com/anaskhan96/soup"
-	"github.com/google/uuid"
 )
 
 const (
@@ -113,8 +112,6 @@ func (oraimo *Oraimo) Index(page data.CrawledPage) {
 
 	productDescription := parsedPage.Find("div", "id", "description").FullText()
 
-	productID := uuid.New()
-
 	productImagesEl := parsedPage.FindAll("img", "class", "fotorama__img")
 
 	productImages := []string{}
@@ -130,7 +127,6 @@ func (oraimo *Oraimo) Index(page data.CrawledPage) {
 		Description: productDescription,
 		URL:         page.URL,
 		Source:      page.Source,
-		ProductID:   productID.String(),
 		Images:      productImages,
 	}
 

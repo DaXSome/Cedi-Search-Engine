@@ -140,15 +140,6 @@ func (jumia *Jumia) Index(page data.CrawledPage) {
 		productDescription = productDescriptionEl.FullText()
 	}
 
-	productID := ""
-
-	productIDTextEl := parsedPage.Find("li", "class", "-pvxs")
-
-	if productIDTextEl.Error == nil {
-		productIDText := productIDTextEl.FullText()
-		productID = strings.Split(productIDText, " ")[1]
-	}
-
 	productImagesEl := parsedPage.FindAll("img", "class", "-fw")
 
 	productImages := []string{}
@@ -164,7 +155,6 @@ func (jumia *Jumia) Index(page data.CrawledPage) {
 		Description: productDescription,
 		URL:         page.URL,
 		Source:      page.Source,
-		ProductID:   productID,
 		Images:      productImages,
 	}
 

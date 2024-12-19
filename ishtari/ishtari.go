@@ -11,7 +11,6 @@ import (
 	"github.com/Cedi-Search/Cedi-Search-Engine/database"
 	"github.com/Cedi-Search/Cedi-Search-Engine/utils"
 	"github.com/anaskhan96/soup"
-	"github.com/google/uuid"
 )
 
 const (
@@ -114,8 +113,6 @@ func (ishtari *Ishtari) Index(page data.CrawledPage) {
 
 	productDescription := parsedPage.Find("div", "class", "my-content").FullText()
 
-	productID := uuid.New()
-
 	productImagesEl := parsedPage.FindAll("img", "class", "border-dgreyZoom")
 
 	productImages := []string{}
@@ -131,7 +128,6 @@ func (ishtari *Ishtari) Index(page data.CrawledPage) {
 		Description: productDescription,
 		URL:         page.URL,
 		Source:      page.Source,
-		ProductID:   productID.String(),
 		Images:      productImages,
 	}
 

@@ -13,7 +13,6 @@ type CrawledPage struct {
 }
 
 type Product struct {
-	ProductID   string   `bson:"_id" json:"objectID"`
 	Slug        string   `bson:"slug" json:"slug"`
 	Name        string   `bson:"name" json:"name"`
 	Price       float64  `bson:"price" json:"price"`

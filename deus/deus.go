@@ -8,7 +8,6 @@ import (
 	"github.com/Cedi-Search/Cedi-Search-Engine/data"
 	"github.com/Cedi-Search/Cedi-Search-Engine/database"
 	"github.com/Cedi-Search/Cedi-Search-Engine/utils"
-	"github.com/google/uuid"
 
 	"github.com/anaskhan96/soup"
 )
@@ -101,8 +100,6 @@ func (deus *Deus) Index(page data.CrawledPage) {
 		productDescription = productDescriptionEl.FullText()
 	}
 
-	productID := uuid.New()
-
 	productImage := parsedPage.Find("img", "class", "no-sirv-lazy-load").Attrs()["src"]
 
 	productData := data.Product{
@@ -112,7 +109,6 @@ func (deus *Deus) Index(page data.CrawledPage) {
 		Description: productDescription,
 		URL:         page.URL,
 		Source:      page.Source,
-		ProductID:   productID.String(),
 		Images:      []string{productImage},
 	}
 
