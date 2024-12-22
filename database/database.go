@@ -177,7 +177,9 @@ func (db *Database) IndexProduct(product data.Product) error {
 		return err
 	}
 
-	product.Slug = strings.Split(parsedURL.Path, "/")[1]
+	segments := strings.Split(parsedURL.Path, "/")
+
+	product.Slug = segments[len(segments)-1]
 
 	_, err = db.Collection("indexed_products").InsertOne(context.TODO(), product, &options.InsertOneOptions{})
 	if err != nil {
