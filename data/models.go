@@ -31,3 +31,19 @@ type AlgoliaData struct {
 	ObjectID string `json:"objectID"`
 	Product
 }
+
+type Data struct {
+	Attribute string `json:"attribute"`
+	Selector  string `json:"selector"`
+}
+
+type Target struct {
+	Target   string `json:"target"`
+	Host     string `json:"host"`
+	SeedPath string `json:"seed_path"`
+	Data     []Data `json:"data"`
+}
+
+type Config struct {
+	Targets []Target `json:"targets"`
+}

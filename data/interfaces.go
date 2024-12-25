@@ -4,7 +4,7 @@ import (
 	"sync"
 )
 
-type Target interface {
+type T interface {
 	Sniff(wg *sync.WaitGroup)
 	Index(page CrawledPage)
 	String() string

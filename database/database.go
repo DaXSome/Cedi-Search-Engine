@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"fmt"
 	"math/rand"
 	netURL "net/url"
 	"os"
@@ -139,6 +140,8 @@ func (db *Database) CanQueueUrl(url string) (bool, error) {
 	existsInIndexedProducts := db.Collection("indexed_products").FindOne(context.TODO(), bson.D{{Key: "_id", Value: parsedURL.Path}}) == nil
 
 	canQueue := !existsInQueue && !existsInIndexedProducts
+
+	utils.Logger(utils.Database, utils.Database, fmt.Sprintf("Can queue %s?", url), canQueue)
 
 	return canQueue, nil
 }
