@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/Cedi-Search/Cedi-Search-Engine/config"
+	"github.com/Cedi-Search/Cedi-Search-Engine/crawler"
 	"github.com/Cedi-Search/Cedi-Search-Engine/data"
 	"github.com/Cedi-Search/Cedi-Search-Engine/database"
 	"github.com/Cedi-Search/Cedi-Search-Engine/sniffer"
@@ -35,9 +36,12 @@ func main() {
 
 	db := database.NewDatabase()
 
+	crawlerFunc := crawler.NewCrawler(db)
+
 	wg.Add(len(config.Targets))
 	for _, target := range config.Targets {
 		go sniffer.Sniff(target, db)
+		go crawlerFunc.Crawl(target)
 	}
 
 	wg.Wait()

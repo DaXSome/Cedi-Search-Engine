@@ -7,12 +7,14 @@ import (
 
 	"github.com/Cedi-Search/Cedi-Search-Engine/data"
 	"github.com/Cedi-Search/Cedi-Search-Engine/database"
+	"github.com/Cedi-Search/Cedi-Search-Engine/indexer"
 	"github.com/Cedi-Search/Cedi-Search-Engine/utils"
 	"github.com/anaskhan96/soup"
 )
 
 type Crawler struct {
-	db *database.Database
+	db      *database.Database
+	indexer *indexer.Indexer
 }
 
 // NewCrawler creates a new instance of the Crawler struct.
@@ -21,7 +23,8 @@ type Crawler struct {
 // It returns a pointer to a Crawler object.
 func NewCrawler(database *database.Database) *Crawler {
 	return &Crawler{
-		db: database,
+		db:      database,
+		indexer: indexer.NewIndexer(database),
 	}
 }
 
@@ -31,14 +34,14 @@ func NewCrawler(database *database.Database) *Crawler {
 // For each URL, it fetches the page content, parses it, saves the HTML to the database,
 // and deletes the URL from the queue. Once all URLs have been crawled, it waits for 30 seconds
 // before calling itself recursively to continue the crawling process.
-func (cr *Crawler) Crawl(source string, indexer func(page data.CrawledPage)) {
-	queue, err := cr.db.GetQueue(source)
+func (cr *Crawler) Crawl(target data.Target) {
+	queue, err := cr.db.GetQueue(target.Target)
 	if utils.HandleErr(err, "Failed to get pages for crawler") {
 		return
 	}
 
 	if len(queue) == 0 {
-		utils.Logger(utils.Crawler, utils.Crawler, "Queue is empty for ", source)
+		utils.Logger(utils.Crawler, utils.Crawler, "Queue is empty for ", target.Target)
 		return
 	}
 
@@ -63,15 +66,18 @@ func (cr *Crawler) Crawl(source string, indexer func(page data.CrawledPage)) {
 			doc := soup.HTMLParse(resp)
 
 			page := data.CrawledPage{
-				URL:    url.URL,
-				HTML:   doc.HTML(),
-				Source: url.Source,
+				URL:     url.URL,
+				HTML:    doc.HTML(),
+				Source:  url.Source,
+				Attribs: target.Data,
 			}
 
-			indexer(page)
+			err = cr.indexer.Index(page)
+			if utils.HandleErr(err, fmt.Sprintf("Failed to index: %v", url)) {
+				return
+			}
 
 			err = cr.db.DeleteFromQueue(url)
-
 			if utils.HandleErr(err, fmt.Sprintf("Failed to delete from crawler queue: %v", url)) {
 				return
 			}
@@ -85,5 +91,5 @@ func (cr *Crawler) Crawl(source string, indexer func(page data.CrawledPage)) {
 	utils.Logger(utils.Crawler, utils.Crawler, "Wait 30s to continue crawling")
 	time.Sleep(30 * time.Second)
 
-	cr.Crawl(source, indexer)
+	// cr.Crawl(source, indexer)
 }

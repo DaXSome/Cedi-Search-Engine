@@ -7,9 +7,10 @@ type UrlQueue struct {
 }
 
 type CrawledPage struct {
-	URL    string `bson:"url"`
-	HTML   string `bson:"html"`
-	Source string `bson:"source"`
+	URL     string `bson:"url"`
+	HTML    string `bson:"html"`
+	Source  string `bson:"source"`
+	Attribs []Data
 }
 
 type Product struct {
@@ -32,9 +33,17 @@ type AlgoliaData struct {
 	Product
 }
 
-type Data struct {
+type Selector struct {
+	Element   string `json:"element"`
 	Attribute string `json:"attribute"`
-	Selector  string `json:"selector"`
+	Value     string `json:"value"`
+}
+
+type Data struct {
+	Label       string   `json:"label"`
+	IsArray     bool     `json:"isArray"`
+	ChildAttrib string   `json:"childAttrib"`
+	Selector    Selector `json:"selector"`
 }
 
 type Target struct {

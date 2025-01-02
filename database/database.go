@@ -172,17 +172,17 @@ func (db *Database) GetCrawledPages(source string) ([]data.CrawledPage, error) {
 // IndexProduct saves a product to the indexed_products collection in the database.
 //
 // It takes a parameter `product` of type `data.Product`.
-func (db *Database) IndexProduct(product data.Product) error {
-	utils.Logger(utils.Database, utils.Database, "Saving product...", product.Name)
+func (db *Database) IndexProduct(product map[string]interface{}) error {
+	utils.Logger(utils.Database, utils.Database, "Saving product...", product["name"])
 
-	parsedURL, err := netURL.Parse(product.URL)
+	parsedURL, err := netURL.Parse(product["url"].(string))
 	if err != nil {
 		return err
 	}
 
 	segments := strings.Split(parsedURL.Path, "/")
 
-	product.Slug = segments[len(segments)-1]
+	product["slug"] = segments[len(segments)-1]
 
 	_, err = db.Collection("indexed_products").InsertOne(context.TODO(), product, &options.InsertOneOptions{})
 	if err != nil {
