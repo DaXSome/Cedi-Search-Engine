@@ -2,7 +2,6 @@ package indexer
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/Cedi-Search/Cedi-Search-Engine/data"
 	"github.com/Cedi-Search/Cedi-Search-Engine/database"
