@@ -2,6 +2,7 @@ package indexer
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/Cedi-Search/Cedi-Search-Engine/data"
 	"github.com/Cedi-Search/Cedi-Search-Engine/database"
@@ -31,6 +32,20 @@ func (indexer *Indexer) Index(page data.CrawledPage) error {
 
 	for _, attrib := range page.Attribs {
 		args := []string{attrib.Selector.Element}
+
+		if attrib.DataType == "string" {
+			if attrib.IsArray {
+				productData[attrib.Label] = []string{}
+			} else {
+				productData[attrib.Label] = ""
+			}
+		} else if attrib.DataType == "number" {
+			if attrib.IsArray {
+				productData[attrib.Label] = []float64{}
+			} else {
+				productData[attrib.Label] = 0
+			}
+		}
 
 		if attrib.Selector.Attribute != "" && attrib.Selector.Attribute != "" {
 			args = append(args, attrib.Selector.Attribute, attrib.Selector.Value)
@@ -81,10 +96,11 @@ func (indexer *Indexer) Index(page data.CrawledPage) error {
 
 		}
 
-		err := indexer.db.IndexProduct(productData)
-		if err != nil {
-			return err
-		}
+	}
+
+	err := indexer.db.IndexProduct(productData)
+	if err != nil {
+		return err
 	}
 
 	return nil

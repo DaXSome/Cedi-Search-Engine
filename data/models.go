@@ -41,6 +41,7 @@ type Selector struct {
 
 type Data struct {
 	Label       string   `json:"label"`
+	DataType    string   `json:"datatype"`
 	IsArray     bool     `json:"isArray"`
 	ChildAttrib string   `json:"childAttrib"`
 	Selector    Selector `json:"selector"`
