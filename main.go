@@ -1,14 +1,11 @@
 package main
 
 import (
-	"encoding/json"
 	"log"
-	"os"
 	"sync"
 
 	"github.com/Cedi-Search/Cedi-Search-Engine/config"
 	"github.com/Cedi-Search/Cedi-Search-Engine/crawler"
-	"github.com/Cedi-Search/Cedi-Search-Engine/data"
 	"github.com/Cedi-Search/Cedi-Search-Engine/database"
 	"github.com/Cedi-Search/Cedi-Search-Engine/sniffer"
 	"github.com/Cedi-Search/Cedi-Search-Engine/utils"
@@ -25,21 +22,17 @@ func main() {
 
 	godotenv.Load()
 
-	engineConfig, err := os.OpenFile("engine.json", os.O_RDONLY, os.ModePerm)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	config := data.Config{}
-
-	json.NewDecoder(engineConfig).Decode(&config)
-
 	db := database.NewDatabase()
 
 	crawlerFunc := crawler.NewCrawler(db)
 
-	wg.Add(len(config.Targets))
-	for _, target := range config.Targets {
+	targets, err := db.GetTargets()
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	wg.Add(len(targets))
+	for _, target := range targets {
 		go sniffer.Sniff(target, db)
 		go crawlerFunc.Crawl(target)
 	}

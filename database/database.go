@@ -205,3 +205,20 @@ func (db *Database) IndexProduct(product map[string]interface{}) error {
 
 	return nil
 }
+
+// GetTargets fetches the targets together with their
+// selectors to be crawled.
+func (db *Database) GetTargets() ([]data.Target, error) {
+	utils.Logger(utils.Database, utils.Database, "Getting targets")
+
+	targets := []data.Target{}
+
+	res, err := db.Collection("targets").Find(context.TODO(), bson.D{}, &options.FindOptions{})
+	if err != nil {
+		return targets, err
+	}
+
+	res.All(context.TODO(), &targets)
+
+	return targets, nil
+}
